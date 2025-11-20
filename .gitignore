@@ -41,3 +41,12 @@ Thumbs.db
 
 # JaCoCo
 jacoco.exec
+
+# Node.js
+node_modules/
+dist/
+*.local
+
+# Frontend build artifacts
+frontend/*/dist/
+frontend/*/node_modules/
