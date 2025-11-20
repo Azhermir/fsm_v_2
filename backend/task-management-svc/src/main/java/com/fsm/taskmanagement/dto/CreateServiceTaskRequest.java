@@ -27,4 +27,8 @@ public class CreateServiceTaskRequest {
     private Priority priority;
 
     private Integer estimatedDuration;
+
+    private Double latitude;
+
+    private Double longitude;
 }

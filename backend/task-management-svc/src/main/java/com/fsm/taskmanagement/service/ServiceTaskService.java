@@ -28,6 +28,8 @@ public class ServiceTaskService {
                 .clientAddress(request.getClientAddress())
                 .priority(request.getPriority())
                 .estimatedDuration(request.getEstimatedDuration())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .status(Status.UNASSIGNED) // Default status
                 .build();
 
@@ -51,6 +53,8 @@ public class ServiceTaskService {
                 .clientAddress(task.getClientAddress())
                 .priority(task.getPriority())
                 .estimatedDuration(task.getEstimatedDuration())
+                .latitude(task.getLatitude())
+                .longitude(task.getLongitude())
                 .status(task.getStatus())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())

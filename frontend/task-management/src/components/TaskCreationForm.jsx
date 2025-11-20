@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import './TaskCreationForm.css';
+import AddressAutocomplete from './AddressAutocomplete';
+import { geocodeAddress } from '../services/geocodingService';
 
 const TaskCreationForm = () => {
   const [formData, setFormData] = useState({
@@ -10,9 +12,15 @@ const TaskCreationForm = () => {
     estimatedDuration: '',
   });
 
+  const [coordinates, setCoordinates] = useState({
+    latitude: null,
+    longitude: null,
+  });
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [geocodingError, setGeocodingError] = useState('');
 
   const validateField = (name, value) => {
     switch (name) {
@@ -81,6 +89,56 @@ const TaskCreationForm = () => {
     if (successMessage) {
       setSuccessMessage('');
     }
+
+    // Clear geocoding error when address changes
+    if (name === 'clientAddress' && geocodingError) {
+      setGeocodingError('');
+    }
+  };
+
+  const handleAddressSelect = async (address) => {
+    setFormData((prev) => ({
+      ...prev,
+      clientAddress: address,
+    }));
+
+    // Clear address error
+    if (errors.clientAddress) {
+      setErrors((prev) => ({
+        ...prev,
+        clientAddress: '',
+      }));
+    }
+
+    // Clear success message
+    if (successMessage) {
+      setSuccessMessage('');
+    }
+
+    // Geocode the selected address
+    try {
+      setGeocodingError('');
+      const result = await geocodeAddress(address);
+      if (result.success) {
+        setCoordinates({
+          latitude: result.lat,
+          longitude: result.lng,
+        });
+      } else {
+        setGeocodingError('Unable to geocode address');
+        setCoordinates({
+          latitude: null,
+          longitude: null,
+        });
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      setGeocodingError('Unable to geocode address');
+      setCoordinates({
+        latitude: null,
+        longitude: null,
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -88,6 +146,28 @@ const TaskCreationForm = () => {
 
     if (!validateForm()) {
       return;
+    }
+
+    // Geocode address if not already geocoded
+    let finalCoordinates = coordinates;
+    if (!coordinates.latitude || !coordinates.longitude) {
+      try {
+        const result = await geocodeAddress(formData.clientAddress);
+        if (result.success) {
+          finalCoordinates = {
+            latitude: result.lat,
+            longitude: result.lng,
+          };
+          setCoordinates(finalCoordinates);
+        } else {
+          setGeocodingError('Unable to geocode address. Please select a valid address from suggestions.');
+          return;
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setGeocodingError('Unable to geocode address. Please select a valid address from suggestions.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -101,6 +181,8 @@ const TaskCreationForm = () => {
         body: JSON.stringify({
           ...formData,
           estimatedDuration: parseInt(formData.estimatedDuration, 10),
+          latitude: finalCoordinates.latitude,
+          longitude: finalCoordinates.longitude,
         }),
       });
 
@@ -114,7 +196,12 @@ const TaskCreationForm = () => {
           priority: 'MEDIUM',
           estimatedDuration: '',
         });
+        setCoordinates({
+          latitude: null,
+          longitude: null,
+        });
         setErrors({});
+        setGeocodingError('');
       } else {
         console.error('Failed to create task');
       }
@@ -174,19 +261,35 @@ const TaskCreationForm = () => {
 
         <div className="form-group">
           <label htmlFor="clientAddress">Client Address</label>
-          <input
-            type="text"
-            id="clientAddress"
-            name="clientAddress"
+          <AddressAutocomplete
             value={formData.clientAddress}
-            onChange={handleChange}
-            className={`form-input ${errors.clientAddress ? 'input-error' : ''}`}
-            aria-invalid={!!errors.clientAddress}
-            aria-describedby={errors.clientAddress ? 'clientAddress-error' : undefined}
+            onChange={(e) => handleChange(e)}
+            onSelect={handleAddressSelect}
+            className={`form-input ${
+              errors.clientAddress || geocodingError ? 'input-error' : ''
+            }`}
+            hasError={!!errors.clientAddress || !!geocodingError}
+            ariaDescribedBy={
+              errors.clientAddress
+                ? 'clientAddress-error'
+                : geocodingError
+                ? 'geocoding-error'
+                : undefined
+            }
           />
           {errors.clientAddress && (
             <span className="error-message" id="clientAddress-error" role="alert">
               {errors.clientAddress}
+            </span>
+          )}
+          {geocodingError && !errors.clientAddress && (
+            <span className="error-message" id="geocoding-error" role="alert">
+              {geocodingError}
+            </span>
+          )}
+          {coordinates.latitude && coordinates.longitude && (
+            <span className="geocode-info">
+              Coordinates: {coordinates.latitude.toFixed(4)}, {coordinates.longitude.toFixed(4)}
             </span>
           )}
         </div>
