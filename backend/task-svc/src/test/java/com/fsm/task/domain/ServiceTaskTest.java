@@ -152,6 +152,42 @@ class ServiceTaskTest {
     }
     
     @Test
+    @DisplayName("Should throw exception when client address is null")
+    void shouldThrowExceptionWhenClientAddressIsNull() {
+        // Arrange & Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ServiceTask.createServiceTask(
+                        "Title", "Description", null, Priority.MEDIUM, 90)
+        );
+        assertEquals("Client address must not be blank", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when client address is blank")
+    void shouldThrowExceptionWhenClientAddressIsBlank() {
+        // Arrange & Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ServiceTask.createServiceTask(
+                        "Title", "Description", "   ", Priority.MEDIUM, 90)
+        );
+        assertEquals("Client address must not be blank", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when client address is empty")
+    void shouldThrowExceptionWhenClientAddressIsEmpty() {
+        // Arrange & Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ServiceTask.createServiceTask(
+                        "Title", "Description", "", Priority.MEDIUM, 90)
+        );
+        assertEquals("Client address must not be blank", exception.getMessage());
+    }
+    
+    @Test
     @DisplayName("Should create task with all priority levels")
     void shouldCreateTaskWithAllPriorityLevels() {
         // Test all priority enum values

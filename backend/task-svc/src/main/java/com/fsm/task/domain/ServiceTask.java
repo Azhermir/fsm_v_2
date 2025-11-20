@@ -43,6 +43,7 @@ public class ServiceTask {
     /**
      * Physical address where the service task will be performed
      */
+    @NotBlank(message = "Client address must not be blank")
     @Column(nullable = false)
     private String clientAddress;
     
@@ -90,7 +91,7 @@ public class ServiceTask {
      * 
      * @param title the task title (must not be blank)
      * @param description the task description
-     * @param clientAddress the client's address
+     * @param clientAddress the client's address (must not be blank)
      * @param priority the task priority (must be valid enum)
      * @param estimatedDuration the estimated duration in minutes (must be positive)
      * @return a new ServiceTask instance
@@ -106,6 +107,10 @@ public class ServiceTask {
         // Validate domain invariants
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("ServiceTask must have a title");
+        }
+        
+        if (clientAddress == null || clientAddress.isBlank()) {
+            throw new IllegalArgumentException("Client address must not be blank");
         }
         
         if (priority == null) {

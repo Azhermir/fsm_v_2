@@ -29,35 +29,56 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
      * Initialize repository with mock data for testing
      */
     private void initializeMockData() {
-        ServiceTask task1 = ServiceTask.builder()
-                .id(idGenerator.getAndIncrement())
-                .title("Fix HVAC System")
-                .description("Air conditioning not working properly")
-                .clientAddress("123 Main St, Springfield, IL 62701")
-                .priority(Priority.HIGH)
-                .estimatedDuration(120)
+        ServiceTask task1 = ServiceTask.createServiceTask(
+                "Fix HVAC System",
+                "Air conditioning not working properly",
+                "123 Main St, Springfield, IL 62701",
+                Priority.HIGH,
+                120);
+        task1 = assignId(task1, idGenerator.getAndIncrement());
+        task1 = ServiceTask.builder()
+                .id(task1.getId())
+                .title(task1.getTitle())
+                .description(task1.getDescription())
+                .clientAddress(task1.getClientAddress())
+                .priority(task1.getPriority())
+                .estimatedDuration(task1.getEstimatedDuration())
                 .status(TaskStatus.UNASSIGNED)
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
         
-        ServiceTask task2 = ServiceTask.builder()
-                .id(idGenerator.getAndIncrement())
-                .title("Plumbing Inspection")
-                .description("Routine plumbing inspection for commercial building")
-                .clientAddress("456 Oak Ave, Chicago, IL 60601")
-                .priority(Priority.MEDIUM)
-                .estimatedDuration(90)
+        ServiceTask task2 = ServiceTask.createServiceTask(
+                "Plumbing Inspection",
+                "Routine plumbing inspection for commercial building",
+                "456 Oak Ave, Chicago, IL 60601",
+                Priority.MEDIUM,
+                90);
+        task2 = assignId(task2, idGenerator.getAndIncrement());
+        task2 = ServiceTask.builder()
+                .id(task2.getId())
+                .title(task2.getTitle())
+                .description(task2.getDescription())
+                .clientAddress(task2.getClientAddress())
+                .priority(task2.getPriority())
+                .estimatedDuration(task2.getEstimatedDuration())
                 .status(TaskStatus.ASSIGNED)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
-        ServiceTask task3 = ServiceTask.builder()
-                .id(idGenerator.getAndIncrement())
-                .title("Emergency Electrical Repair")
-                .description("Power outage in office building")
-                .clientAddress("789 Elm St, Boston, MA 02101")
-                .priority(Priority.CRITICAL)
-                .estimatedDuration(180)
+        ServiceTask task3 = ServiceTask.createServiceTask(
+                "Emergency Electrical Repair",
+                "Power outage in office building",
+                "789 Elm St, Boston, MA 02101",
+                Priority.CRITICAL,
+                180);
+        task3 = assignId(task3, idGenerator.getAndIncrement());
+        task3 = ServiceTask.builder()
+                .id(task3.getId())
+                .title(task3.getTitle())
+                .description(task3.getDescription())
+                .clientAddress(task3.getClientAddress())
+                .priority(task3.getPriority())
+                .estimatedDuration(task3.getEstimatedDuration())
                 .status(TaskStatus.IN_PROGRESS)
                 .createdAt(LocalDateTime.now().minusHours(6))
                 .build();
@@ -65,6 +86,23 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
         storage.put(task1.getId(), task1);
         storage.put(task2.getId(), task2);
         storage.put(task3.getId(), task3);
+    }
+    
+    /**
+     * Helper method to assign an ID to a task
+     */
+    private ServiceTask assignId(ServiceTask task, Long id) {
+        return ServiceTask.builder()
+                .id(id)
+                .title(task.getTitle())
+                .description(task.getDescription())
+                .clientAddress(task.getClientAddress())
+                .priority(task.getPriority())
+                .estimatedDuration(task.getEstimatedDuration())
+                .status(task.getStatus())
+                .createdAt(task.getCreatedAt() != null ? 
+                        task.getCreatedAt() : LocalDateTime.now())
+                .build();
     }
     
     @Override
@@ -76,17 +114,7 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
         // If no ID, generate one (new entity)
         if (serviceTask.getId() == null) {
             Long newId = idGenerator.getAndIncrement();
-            ServiceTask taskWithId = ServiceTask.builder()
-                    .id(newId)
-                    .title(serviceTask.getTitle())
-                    .description(serviceTask.getDescription())
-                    .clientAddress(serviceTask.getClientAddress())
-                    .priority(serviceTask.getPriority())
-                    .estimatedDuration(serviceTask.getEstimatedDuration())
-                    .status(serviceTask.getStatus())
-                    .createdAt(serviceTask.getCreatedAt() != null ? 
-                            serviceTask.getCreatedAt() : LocalDateTime.now())
-                    .build();
+            ServiceTask taskWithId = assignId(serviceTask, newId);
             storage.put(newId, taskWithId);
             return taskWithId;
         }
