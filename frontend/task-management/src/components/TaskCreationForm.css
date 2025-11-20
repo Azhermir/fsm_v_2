@@ -10,6 +10,16 @@
   text-align: center;
 }
 
+.success-message {
+  background-color: #10b981;
+  color: white;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
 .task-creation-form {
   display: flex;
   flex-direction: column;
@@ -48,9 +58,21 @@
   border-color: #646cff;
 }
 
+.form-input.input-error,
+.form-textarea.input-error,
+.form-select.input-error {
+  border-color: #ef4444;
+}
+
 .form-textarea {
   resize: vertical;
   min-height: 100px;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .submit-button {
@@ -66,10 +88,16 @@
   margin-top: 0.5rem;
 }
 
-.submit-button:hover {
+.submit-button:hover:not(:disabled) {
   background-color: #535bf2;
 }
 
-.submit-button:active {
+.submit-button:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.submit-button:disabled {
+  background-color: #4a4a4a;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

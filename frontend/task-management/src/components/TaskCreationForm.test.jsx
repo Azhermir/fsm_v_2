@@ -75,6 +75,84 @@ describe('TaskCreationForm', () => {
     expect(prioritySelect.value).toBe('LOW');
   });
 
+  it('should disable submit button when form is invalid', () => {
+    render(<TaskCreationForm />);
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should enable submit button when all fields are valid', async () => {
+    const user = userEvent.setup();
+    render(<TaskCreationForm />);
+    
+    await user.type(screen.getByLabelText('Title'), 'Test Title');
+    await user.type(screen.getByLabelText('Description'), 'Test Description');
+    await user.type(screen.getByLabelText('Client Address'), '123 Main St');
+    await user.type(screen.getByLabelText('Estimated Duration (minutes)'), '60');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    expect(submitButton).not.toBeDisabled();
+  });
+
+  it('should show error messages when submitting empty form', async () => {
+    const user = userEvent.setup();
+    render(<TaskCreationForm />);
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    expect(submitButton).toBeDisabled();
+    
+    // Force click on the form submit (simulating Enter key press)
+    const form = screen.getByRole('button', { name: 'Create Task' }).closest('form');
+    fireEvent.submit(form);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Title is required')).toBeInTheDocument();
+      expect(screen.getByText('Description is required')).toBeInTheDocument();
+      expect(screen.getByText('Client address is required')).toBeInTheDocument();
+      expect(screen.getByText('Estimated duration is required')).toBeInTheDocument();
+    });
+  });
+
+  it('should clear error message when user starts typing', async () => {
+    const user = userEvent.setup();
+    render(<TaskCreationForm />);
+    
+    const form = screen.getByRole('button', { name: 'Create Task' }).closest('form');
+    fireEvent.submit(form);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Title is required')).toBeInTheDocument();
+    });
+    
+    const titleInput = screen.getByLabelText('Title');
+    await user.type(titleInput, 'T');
+    
+    expect(screen.queryByText('Title is required')).not.toBeInTheDocument();
+  });
+
+  it('should show error for negative estimated duration', async () => {
+    const user = userEvent.setup();
+    render(<TaskCreationForm />);
+    
+    const durationInput = screen.getByLabelText('Estimated Duration (minutes)');
+    await user.type(durationInput, '-5');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('should show error for zero estimated duration', async () => {
+    const user = userEvent.setup();
+    render(<TaskCreationForm />);
+    
+    const durationInput = screen.getByLabelText('Estimated Duration (minutes)');
+    await user.type(durationInput, '0');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    expect(submitButton).toBeDisabled();
+  });
+
   it('should call API with correct data on form submit', async () => {
     const user = userEvent.setup();
     global.fetch = vi.fn(() =>
@@ -112,6 +190,117 @@ describe('TaskCreationForm', () => {
           }),
         })
       );
+    });
+  });
+
+  it('should show success message after successful task creation', async () => {
+    const user = userEvent.setup();
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ id: '123' }),
+      })
+    );
+    
+    render(<TaskCreationForm />);
+    
+    await user.type(screen.getByLabelText('Title'), 'Test Task');
+    await user.type(screen.getByLabelText('Description'), 'Test Description');
+    await user.type(screen.getByLabelText('Client Address'), 'Test Address');
+    await user.type(screen.getByLabelText('Estimated Duration (minutes)'), '60');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    await user.click(submitButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Task created successfully!')).toBeInTheDocument();
+    });
+  });
+
+  it('should clear form after successful submission', async () => {
+    const user = userEvent.setup();
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ id: '123' }),
+      })
+    );
+    
+    render(<TaskCreationForm />);
+    
+    await user.type(screen.getByLabelText('Title'), 'Test Task');
+    await user.type(screen.getByLabelText('Description'), 'Test Description');
+    await user.type(screen.getByLabelText('Client Address'), 'Test Address');
+    await user.type(screen.getByLabelText('Estimated Duration (minutes)'), '60');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    await user.click(submitButton);
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Title').value).toBe('');
+      expect(screen.getByLabelText('Description').value).toBe('');
+      expect(screen.getByLabelText('Client Address').value).toBe('');
+      expect(screen.getByLabelText('Priority').value).toBe('MEDIUM');
+      expect(screen.getByLabelText('Estimated Duration (minutes)').value).toBe('');
+    });
+  });
+
+  it('should clear success message when user modifies form', async () => {
+    const user = userEvent.setup();
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ id: '123' }),
+      })
+    );
+    
+    render(<TaskCreationForm />);
+    
+    await user.type(screen.getByLabelText('Title'), 'Test Task');
+    await user.type(screen.getByLabelText('Description'), 'Test Description');
+    await user.type(screen.getByLabelText('Client Address'), 'Test Address');
+    await user.type(screen.getByLabelText('Estimated Duration (minutes)'), '60');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    await user.click(submitButton);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Task created successfully!')).toBeInTheDocument();
+    });
+    
+    // Start typing in title field
+    await user.type(screen.getByLabelText('Title'), 'N');
+    
+    expect(screen.queryByText('Task created successfully!')).not.toBeInTheDocument();
+  });
+
+  it('should disable submit button while submitting', async () => {
+    const user = userEvent.setup();
+    let resolvePromise;
+    global.fetch = vi.fn(() => new Promise((resolve) => {
+      resolvePromise = resolve;
+    }));
+    
+    render(<TaskCreationForm />);
+    
+    await user.type(screen.getByLabelText('Title'), 'Test Task');
+    await user.type(screen.getByLabelText('Description'), 'Test Description');
+    await user.type(screen.getByLabelText('Client Address'), 'Test Address');
+    await user.type(screen.getByLabelText('Estimated Duration (minutes)'), '60');
+    
+    const submitButton = screen.getByRole('button', { name: 'Create Task' });
+    await user.click(submitButton);
+    
+    expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
+    
+    // Resolve the promise
+    resolvePromise({
+      ok: true,
+      json: () => Promise.resolve({ id: '123' }),
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Create Task' })).toBeInTheDocument();
     });
   });
 
@@ -196,13 +385,6 @@ describe('TaskCreationForm', () => {
     });
   });
 
-  it('should allow empty estimatedDuration field', () => {
-    render(<TaskCreationForm />);
-    
-    const durationInput = screen.getByLabelText('Estimated Duration (minutes)');
-    expect(durationInput.value).toBe('');
-  });
-
   it('should render all priority enum values correctly', () => {
     render(<TaskCreationForm />);
     
@@ -221,5 +403,32 @@ describe('TaskCreationForm', () => {
     expect(screen.getByLabelText('Title')).toHaveAttribute('type', 'text');
     expect(screen.getByLabelText('Client Address')).toHaveAttribute('type', 'text');
     expect(screen.getByLabelText('Estimated Duration (minutes)')).toHaveAttribute('type', 'number');
+  });
+
+  it('should add error class to inputs with validation errors', async () => {
+    render(<TaskCreationForm />);
+    
+    const form = screen.getByRole('button', { name: 'Create Task' }).closest('form');
+    fireEvent.submit(form);
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText('Title')).toHaveClass('input-error');
+      expect(screen.getByLabelText('Description')).toHaveClass('input-error');
+      expect(screen.getByLabelText('Client Address')).toHaveClass('input-error');
+      expect(screen.getByLabelText('Estimated Duration (minutes)')).toHaveClass('input-error');
+    });
+  });
+
+  it('should have proper ARIA attributes for error messages', async () => {
+    render(<TaskCreationForm />);
+    
+    const form = screen.getByRole('button', { name: 'Create Task' }).closest('form');
+    fireEvent.submit(form);
+    
+    await waitFor(() => {
+      const titleInput = screen.getByLabelText('Title');
+      expect(titleInput).toHaveAttribute('aria-invalid', 'true');
+      expect(titleInput).toHaveAttribute('aria-describedby', 'title-error');
+    });
   });
 });
