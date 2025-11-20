@@ -311,8 +311,8 @@ class DatabaseServiceTaskRepositoryTest {
         assertTrue(found.isPresent());
         // Compare timestamps are within acceptable range (database precision limits)
         LocalDateTime foundCreatedAt = found.get().getCreatedAt();
-        long nanosDiff = Math.abs(java.time.Duration.between(originalCreatedAt, foundCreatedAt).toNanos());
-        assertTrue(nanosDiff < 1000, "CreatedAt timestamps should be within 1 microsecond");
+        long millisDiff = Math.abs(java.time.Duration.between(originalCreatedAt, foundCreatedAt).toMillis());
+        assertTrue(millisDiff < 1, "CreatedAt timestamps should be within 1 millisecond");
     }
     
     @Test

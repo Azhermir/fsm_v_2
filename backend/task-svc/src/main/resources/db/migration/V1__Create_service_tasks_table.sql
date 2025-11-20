@@ -1,4 +1,6 @@
 -- Create service_tasks table
+-- Note: CHECK constraints on priority and status use hardcoded enum values
+-- If Priority or TaskStatus enums change in the code, this migration must be updated accordingly
 CREATE TABLE service_tasks (
     id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
