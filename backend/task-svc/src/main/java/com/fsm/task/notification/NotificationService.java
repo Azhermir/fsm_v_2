@@ -41,7 +41,7 @@ public class NotificationService {
             log.info("Body:\n{}", emailBody);
             
             // Simulate email sending
-            // In TASK-027, this will be replaced with actual email provider integration
+            // In TASK-124, this will be replaced with actual email provider integration
             simulateEmailSend(emailSubject, emailBody, event.getClientAddress());
             
             log.info("Task completion notification logged successfully for task {}", event.getTaskId());
