@@ -4,12 +4,16 @@ import com.fsm.task.domain.ServiceTask;
 import com.fsm.task.domain.TaskStatus;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.UpdateTaskStatusRequest;
+import com.fsm.task.event.TaskCompletedEvent;
 import com.fsm.task.repository.IServiceTaskRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,10 +26,13 @@ import java.util.stream.Collectors;
 public class TaskService {
     
     private final IServiceTaskRepository taskRepository;
+    private final ApplicationEventPublisher eventPublisher;
     
     @Autowired
-    public TaskService(IServiceTaskRepository taskRepository) {
+    public TaskService(IServiceTaskRepository taskRepository, 
+                      ApplicationEventPublisher eventPublisher) {
         this.taskRepository = taskRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     /**
@@ -91,6 +98,48 @@ public class TaskService {
         return tasks.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * Update task status
+     * Publishes TaskCompletedEvent when status changes to COMPLETED
+     * 
+     * @param taskId the task ID
+     * @param request the update status request
+     * @return the updated task response
+     */
+    @Transactional
+    public ServiceTaskResponse updateTaskStatus(Long taskId, UpdateTaskStatusRequest request) {
+        log.info("Updating task {} status to {}", taskId, request.getStatus());
+        
+        // Find the task
+        ServiceTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + taskId));
+        
+        TaskStatus oldStatus = task.getStatus();
+        task.setStatus(request.getStatus());
+        
+        // Save the updated task
+        ServiceTask updatedTask = taskRepository.save(task);
+        
+        // Publish TaskCompletedEvent if status changed to COMPLETED
+        if (request.getStatus() == TaskStatus.COMPLETED && oldStatus != TaskStatus.COMPLETED) {
+            log.info("Publishing TaskCompletedEvent for task {}", taskId);
+            
+            TaskCompletedEvent event = TaskCompletedEvent.builder()
+                    .taskId(updatedTask.getId())
+                    .title(updatedTask.getTitle())
+                    .clientAddress(updatedTask.getClientAddress())
+                    .workSummary(request.getWorkSummary())
+                    .completionTime(LocalDateTime.now())
+                    .build();
+            
+            eventPublisher.publishEvent(event);
+            log.info("TaskCompletedEvent published for task {}", taskId);
+        }
+        
+        log.info("Task {} status updated successfully", taskId);
+        return convertToResponse(updatedTask);
     }
     
     /**

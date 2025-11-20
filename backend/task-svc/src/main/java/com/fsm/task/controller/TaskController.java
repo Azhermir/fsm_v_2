@@ -4,6 +4,7 @@ import com.fsm.task.domain.TaskStatus;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ErrorResponse;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.UpdateTaskStatusRequest;
 import com.fsm.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -124,6 +125,53 @@ public class TaskController {
             throw e;
         } catch (Exception e) {
             log.error("Error retrieving tasks", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Update task status
+     * 
+     * @param taskId the task ID
+     * @param request the update status request
+     * @return the updated task with 200 status
+     */
+    @PutMapping("/{taskId}/status")
+    @Operation(summary = "Update task status", 
+               description = "Updates the status of a service task. Triggers notification when status changes to COMPLETED")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", 
+                     description = "Task status updated successfully",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ServiceTaskResponse.class))),
+        @ApiResponse(responseCode = "400", 
+                     description = "Invalid request data",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", 
+                     description = "Task not found",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", 
+                     description = "Internal server error",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<ServiceTaskResponse> updateTaskStatus(
+            @Parameter(description = "Task ID")
+            @PathVariable Long taskId,
+            @Valid @RequestBody UpdateTaskStatusRequest request) {
+        
+        log.info("PUT /api/tasks/{}/status - Updating task status to {}", taskId, request.getStatus());
+        
+        try {
+            ServiceTaskResponse response = taskService.updateTaskStatus(taskId, request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error updating task status", e);
             throw e;
         }
     }
