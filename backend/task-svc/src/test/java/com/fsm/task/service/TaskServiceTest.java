@@ -16,6 +16,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -249,5 +252,146 @@ class TaskServiceTest {
         assertThrows(IllegalArgumentException.class, 
                 () -> taskService.createTask(validRequest));
         verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should get all tasks successfully")
+    void shouldGetAllTasksSuccessfully() {
+        // Arrange
+        ServiceTask task1 = ServiceTask.builder()
+                .id(1L)
+                .title("Task 1")
+                .description("Description 1")
+                .clientAddress("Address 1")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now().minusDays(2))
+                .build();
+        
+        ServiceTask task2 = ServiceTask.builder()
+                .id(2L)
+                .title("Task 2")
+                .description("Description 2")
+                .clientAddress("Address 2")
+                .priority(Priority.MEDIUM)
+                .estimatedDuration(90)
+                .status(TaskStatus.ASSIGNED)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+        
+        when(taskRepository.findAllOrderByCreatedAtDesc()).thenReturn(Arrays.asList(task2, task1));
+        
+        // Act
+        List<ServiceTaskResponse> responses = taskService.getAllTasks();
+        
+        // Assert
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+        assertEquals("Task 2", responses.get(0).getTitle());
+        assertEquals("Task 1", responses.get(1).getTitle());
+        verify(taskRepository, times(1)).findAllOrderByCreatedAtDesc();
+    }
+    
+    @Test
+    @DisplayName("Should return empty list when no tasks exist")
+    void shouldReturnEmptyListWhenNoTasksExist() {
+        // Arrange
+        when(taskRepository.findAllOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
+        
+        // Act
+        List<ServiceTaskResponse> responses = taskService.getAllTasks();
+        
+        // Assert
+        assertNotNull(responses);
+        assertEquals(0, responses.size());
+        verify(taskRepository, times(1)).findAllOrderByCreatedAtDesc();
+    }
+    
+    @Test
+    @DisplayName("Should get tasks by status successfully")
+    void shouldGetTasksByStatusSuccessfully() {
+        // Arrange
+        ServiceTask task1 = ServiceTask.builder()
+                .id(1L)
+                .title("Unassigned Task 1")
+                .description("Description 1")
+                .clientAddress("Address 1")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now().minusDays(1))
+                .build();
+        
+        ServiceTask task2 = ServiceTask.builder()
+                .id(2L)
+                .title("Unassigned Task 2")
+                .description("Description 2")
+                .clientAddress("Address 2")
+                .priority(Priority.MEDIUM)
+                .estimatedDuration(90)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        when(taskRepository.findByStatusOrderByCreatedAtDesc(TaskStatus.UNASSIGNED))
+                .thenReturn(Arrays.asList(task2, task1));
+        
+        // Act
+        List<ServiceTaskResponse> responses = taskService.getTasksByStatus(TaskStatus.UNASSIGNED);
+        
+        // Assert
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+        assertEquals("Unassigned Task 2", responses.get(0).getTitle());
+        assertEquals("Unassigned Task 1", responses.get(1).getTitle());
+        responses.forEach(r -> assertEquals(TaskStatus.UNASSIGNED, r.getStatus()));
+        verify(taskRepository, times(1)).findByStatusOrderByCreatedAtDesc(TaskStatus.UNASSIGNED);
+    }
+    
+    @Test
+    @DisplayName("Should return empty list when no tasks with status exist")
+    void shouldReturnEmptyListWhenNoTasksWithStatusExist() {
+        // Arrange
+        when(taskRepository.findByStatusOrderByCreatedAtDesc(TaskStatus.COMPLETED))
+                .thenReturn(Collections.emptyList());
+        
+        // Act
+        List<ServiceTaskResponse> responses = taskService.getTasksByStatus(TaskStatus.COMPLETED);
+        
+        // Assert
+        assertNotNull(responses);
+        assertEquals(0, responses.size());
+        verify(taskRepository, times(1)).findByStatusOrderByCreatedAtDesc(TaskStatus.COMPLETED);
+    }
+    
+    @Test
+    @DisplayName("Should get tasks for all status types")
+    void shouldGetTasksForAllStatusTypes() {
+        // Test all TaskStatus enum values
+        for (TaskStatus status : TaskStatus.values()) {
+            // Arrange
+            ServiceTask task = ServiceTask.builder()
+                    .id(1L)
+                    .title("Task")
+                    .description("Description")
+                    .clientAddress("Address")
+                    .priority(Priority.MEDIUM)
+                    .estimatedDuration(60)
+                    .status(status)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            
+            when(taskRepository.findByStatusOrderByCreatedAtDesc(status))
+                    .thenReturn(Collections.singletonList(task));
+            
+            // Act
+            List<ServiceTaskResponse> responses = taskService.getTasksByStatus(status);
+            
+            // Assert
+            assertNotNull(responses);
+            assertEquals(1, responses.size());
+            assertEquals(status, responses.get(0).getStatus());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.fsm.task.repository;
 
 import com.fsm.task.domain.ServiceTask;
+import com.fsm.task.domain.TaskStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,4 +43,19 @@ public interface IServiceTaskRepository {
      * @return true if the ServiceTask was deleted, false if it didn't exist
      */
     boolean delete(Long id);
+    
+    /**
+     * Find all ServiceTasks ordered by creation date descending (newest first)
+     * 
+     * @return List of all ServiceTasks in creation order
+     */
+    List<ServiceTask> findAllOrderByCreatedAtDesc();
+    
+    /**
+     * Find all ServiceTasks by status, ordered by creation date descending (newest first)
+     * 
+     * @param status the task status to filter by
+     * @return List of ServiceTasks with the specified status
+     */
+    List<ServiceTask> findByStatusOrderByCreatedAtDesc(TaskStatus status);
 }
