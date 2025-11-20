@@ -5,6 +5,8 @@ import com.fsm.task.domain.ServiceTask;
 import com.fsm.task.domain.TaskStatus;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.UpdateTaskStatusRequest;
+import com.fsm.task.event.TaskCompletedEvent;
 import com.fsm.task.repository.IServiceTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,11 +16,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +36,9 @@ class TaskServiceTest {
     
     @Mock
     private IServiceTaskRepository taskRepository;
+    
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
     
     @InjectMocks
     private TaskService taskService;
@@ -393,5 +400,188 @@ class TaskServiceTest {
             assertEquals(1, responses.size());
             assertEquals(status, responses.get(0).getStatus());
         }
+    }
+    
+    @Test
+    @DisplayName("Should update task status successfully")
+    void shouldUpdateTaskStatusSuccessfully() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.IN_PROGRESS)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        ServiceTask updatedTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.COMPLETED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("Fixed the air conditioning unit")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(updatedTask);
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals(TaskStatus.COMPLETED, response.getStatus());
+        
+        verify(taskRepository, times(1)).findById(1L);
+        verify(taskRepository, times(1)).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should publish TaskCompletedEvent when status changes to COMPLETED")
+    void shouldPublishTaskCompletedEventWhenStatusChangesToCompleted() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.IN_PROGRESS)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        ServiceTask updatedTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.COMPLETED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("Fixed the air conditioning unit")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(updatedTask);
+        
+        // Act
+        taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        ArgumentCaptor<TaskCompletedEvent> eventCaptor = ArgumentCaptor.forClass(TaskCompletedEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+        
+        TaskCompletedEvent capturedEvent = eventCaptor.getValue();
+        assertEquals(1L, capturedEvent.getTaskId());
+        assertEquals("Fix HVAC System", capturedEvent.getTitle());
+        assertEquals("123 Main St, Springfield", capturedEvent.getClientAddress());
+        assertEquals("Fixed the air conditioning unit", capturedEvent.getWorkSummary());
+        assertNotNull(capturedEvent.getCompletionTime());
+    }
+    
+    @Test
+    @DisplayName("Should not publish event when status does not change to COMPLETED")
+    void shouldNotPublishEventWhenStatusDoesNotChangeToCompleted() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        ServiceTask updatedTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.IN_PROGRESS)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(updatedTask);
+        
+        // Act
+        taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+    
+    @Test
+    @DisplayName("Should not publish event when task is already COMPLETED")
+    void shouldNotPublishEventWhenTaskAlreadyCompleted() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.COMPLETED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("Already completed")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(existingTask);
+        
+        // Act
+        taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when task not found")
+    void shouldThrowExceptionWhenTaskNotFound() {
+        // Arrange
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .build();
+        
+        when(taskRepository.findById(999L)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.updateTaskStatus(999L, request)
+        );
+        
+        assertEquals("Task not found with id: 999", exception.getMessage());
+        verify(taskRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }
