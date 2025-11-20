@@ -59,7 +59,7 @@ This helps you create task issues that respect domain boundaries and use domain 
 **Action:** Use GitHub MCP to create micro-task issues:
 ```
 Title: TASK-[number]: [Bounded Context] [Tiny Specific Action Using Domain Terms]
-Labels: type:dev-task, size:small, area:[backend|frontend], story:[story-number], context:[bounded-context-name]
+Labels: type:dev-task, size:small, area:[backend|frontend][Do not include both backend and frontend for a single task], story:[story-number], context:[bounded-context-name]
 Body:
   ## Task
   [One sentence: what to build in this step, using domain language]
