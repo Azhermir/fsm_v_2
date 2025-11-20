@@ -1,0 +1,5 @@
+com/fsm/task/TaskServiceApplication.class
+com/fsm/task/domain/TaskStatus.class
+com/fsm/task/domain/ServiceTask$ServiceTaskBuilder.class
+com/fsm/task/domain/Priority.class
+com/fsm/task/domain/ServiceTask.class

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServiceTask.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">task-svc</a> &gt; <a href="index.source.html" class="el_package">com.fsm.task.domain</a> &gt; <span class="el_source">ServiceTask.java</span></div><h1>ServiceTask.java</h1><pre class="source lang-java linenums">package com.fsm.task.domain;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * ServiceTask aggregate domain model representing a field service task
+ * This is the root entity of the ServiceTask aggregate
+ */
+@Entity
+@Table(name = &quot;service_tasks&quot;)
+<span class="pc bpc" id="L20" title="43 of 70 branches missed.">@Data</span>
+<span class="pc" id="L21">@Builder</span>
+<span class="nc" id="L22">@NoArgsConstructor</span>
+<span class="fc" id="L23">@AllArgsConstructor</span>
+public class ServiceTask {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+<span class="fc" id="L28">    private Long id;</span>
+    
+    /**
+     * Title of the service task - must not be blank (domain invariant)
+     */
+    @NotBlank(message = &quot;ServiceTask must have a title&quot;)
+    @Column(nullable = false)
+<span class="fc" id="L35">    private String title;</span>
+    
+    /**
+     * Detailed description of the service task
+     */
+    @Column(length = 1000)
+<span class="fc" id="L41">    private String description;</span>
+    
+    /**
+     * Physical address where the service task will be performed
+     */
+    @Column(nullable = false)
+<span class="fc" id="L47">    private String clientAddress;</span>
+    
+    /**
+     * Priority level of the task - must be one of the defined enum values (domain invariant)
+     */
+    @NotNull(message = &quot;Priority must be one of the defined enum values&quot;)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+<span class="fc" id="L55">    private Priority priority;</span>
+    
+    /**
+     * Estimated duration in minutes - must be positive (domain invariant)
+     */
+    @Positive(message = &quot;EstimatedDuration must be positive&quot;)
+    @Column(nullable = false)
+<span class="fc" id="L62">    private Integer estimatedDuration;</span>
+    
+    /**
+     * Current status of the task
+     */
+    @NotNull(message = &quot;TaskStatus must be defined&quot;)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+<span class="fc" id="L70">    private TaskStatus status;</span>
+    
+    /**
+     * Timestamp when the task was created
+     */
+    @Column(nullable = false, updatable = false)
+<span class="fc" id="L76">    private LocalDateTime createdAt;</span>
+    
+    /**
+     * Pre-persist callback to set createdAt timestamp
+     */
+    @PrePersist
+    protected void onCreate() {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (createdAt == null) {</span>
+<span class="fc" id="L84">            createdAt = LocalDateTime.now();</span>
+        }
+<span class="fc" id="L86">    }</span>
+    
+    /**
+     * Factory method to create a ServiceTask with required fields and domain invariant validation
+     * 
+     * @param title the task title (must not be blank)
+     * @param description the task description
+     * @param clientAddress the client's address
+     * @param priority the task priority (must be valid enum)
+     * @param estimatedDuration the estimated duration in minutes (must be positive)
+     * @return a new ServiceTask instance
+     * @throws IllegalArgumentException if domain invariants are violated
+     */
+    public static ServiceTask createServiceTask(
+            String title, 
+            String description, 
+            String clientAddress, 
+            Priority priority, 
+            Integer estimatedDuration) {
+        
+        // Validate domain invariants
+<span class="fc bfc" id="L107" title="All 4 branches covered.">        if (title == null || title.isBlank()) {</span>
+<span class="fc" id="L108">            throw new IllegalArgumentException(&quot;ServiceTask must have a title&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (priority == null) {</span>
+<span class="fc" id="L112">            throw new IllegalArgumentException(&quot;Priority must be one of the defined enum values&quot;);</span>
+        }
+        
+<span class="fc bfc" id="L115" title="All 4 branches covered.">        if (estimatedDuration == null || estimatedDuration &lt;= 0) {</span>
+<span class="fc" id="L116">            throw new IllegalArgumentException(&quot;EstimatedDuration must be positive&quot;);</span>
+        }
+        
+<span class="fc" id="L119">        return ServiceTask.builder()</span>
+<span class="fc" id="L120">                .title(title)</span>
+<span class="fc" id="L121">                .description(description)</span>
+<span class="fc" id="L122">                .clientAddress(clientAddress)</span>
+<span class="fc" id="L123">                .priority(priority)</span>
+<span class="fc" id="L124">                .estimatedDuration(estimatedDuration)</span>
+<span class="fc" id="L125">                .status(TaskStatus.UNASSIGNED)</span>
+<span class="fc" id="L126">                .createdAt(LocalDateTime.now())</span>
+<span class="fc" id="L127">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
