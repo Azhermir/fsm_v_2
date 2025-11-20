@@ -1,0 +1,253 @@
+package com.fsm.task.service;
+
+import com.fsm.task.domain.Priority;
+import com.fsm.task.domain.ServiceTask;
+import com.fsm.task.domain.TaskStatus;
+import com.fsm.task.dto.CreateServiceTaskRequest;
+import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.repository.IServiceTaskRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+/**
+ * Unit tests for TaskService
+ */
+@ExtendWith(MockitoExtension.class)
+class TaskServiceTest {
+    
+    @Mock
+    private IServiceTaskRepository taskRepository;
+    
+    @InjectMocks
+    private TaskService taskService;
+    
+    private CreateServiceTaskRequest validRequest;
+    private ServiceTask mockSavedTask;
+    
+    @BeforeEach
+    void setUp() {
+        validRequest = CreateServiceTaskRequest.builder()
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .build();
+        
+        mockSavedTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description("Air conditioning not working")
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    @Test
+    @DisplayName("Should create task successfully")
+    void shouldCreateTaskSuccessfully() {
+        // Arrange
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(mockSavedTask);
+        
+        // Act
+        ServiceTaskResponse response = taskService.createTask(validRequest);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("Fix HVAC System", response.getTitle());
+        assertEquals("Air conditioning not working", response.getDescription());
+        assertEquals("123 Main St, Springfield", response.getClientAddress());
+        assertEquals(Priority.HIGH, response.getPriority());
+        assertEquals(120, response.getEstimatedDuration());
+        assertEquals(TaskStatus.UNASSIGNED, response.getStatus());
+        assertNotNull(response.getCreatedAt());
+        
+        verify(taskRepository, times(1)).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should create task with correct status")
+    void shouldCreateTaskWithCorrectStatus() {
+        // Arrange
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(mockSavedTask);
+        
+        // Act
+        ServiceTaskResponse response = taskService.createTask(validRequest);
+        
+        // Assert
+        assertEquals(TaskStatus.UNASSIGNED, response.getStatus());
+    }
+    
+    @Test
+    @DisplayName("Should invoke repository save method")
+    void shouldInvokeRepositorySaveMethod() {
+        // Arrange
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(mockSavedTask);
+        
+        // Act
+        taskService.createTask(validRequest);
+        
+        // Assert
+        ArgumentCaptor<ServiceTask> taskCaptor = ArgumentCaptor.forClass(ServiceTask.class);
+        verify(taskRepository).save(taskCaptor.capture());
+        
+        ServiceTask capturedTask = taskCaptor.getValue();
+        assertEquals("Fix HVAC System", capturedTask.getTitle());
+        assertEquals("Air conditioning not working", capturedTask.getDescription());
+        assertEquals("123 Main St, Springfield", capturedTask.getClientAddress());
+        assertEquals(Priority.HIGH, capturedTask.getPriority());
+        assertEquals(120, capturedTask.getEstimatedDuration());
+        assertEquals(TaskStatus.UNASSIGNED, capturedTask.getStatus());
+    }
+    
+    @Test
+    @DisplayName("Should create task with null description")
+    void shouldCreateTaskWithNullDescription() {
+        // Arrange
+        validRequest.setDescription(null);
+        ServiceTask taskWithNullDesc = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .description(null)
+                .clientAddress("123 Main St, Springfield")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(taskWithNullDesc);
+        
+        // Act
+        ServiceTaskResponse response = taskService.createTask(validRequest);
+        
+        // Assert
+        assertNotNull(response);
+        assertNull(response.getDescription());
+    }
+    
+    @Test
+    @DisplayName("Should create tasks with all priority levels")
+    void shouldCreateTasksWithAllPriorityLevels() {
+        for (Priority priority : Priority.values()) {
+            // Arrange
+            validRequest.setPriority(priority);
+            ServiceTask taskWithPriority = ServiceTask.builder()
+                    .id(1L)
+                    .title("Task")
+                    .description("Description")
+                    .clientAddress("Address")
+                    .priority(priority)
+                    .estimatedDuration(60)
+                    .status(TaskStatus.UNASSIGNED)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            when(taskRepository.save(any(ServiceTask.class))).thenReturn(taskWithPriority);
+            
+            // Act
+            ServiceTaskResponse response = taskService.createTask(validRequest);
+            
+            // Assert
+            assertEquals(priority, response.getPriority());
+        }
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when title is null")
+    void shouldThrowExceptionWhenTitleIsNull() {
+        // Arrange
+        validRequest.setTitle(null);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when title is blank")
+    void shouldThrowExceptionWhenTitleIsBlank() {
+        // Arrange
+        validRequest.setTitle("   ");
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when client address is null")
+    void shouldThrowExceptionWhenClientAddressIsNull() {
+        // Arrange
+        validRequest.setClientAddress(null);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when priority is null")
+    void shouldThrowExceptionWhenPriorityIsNull() {
+        // Arrange
+        validRequest.setPriority(null);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when estimated duration is null")
+    void shouldThrowExceptionWhenEstimatedDurationIsNull() {
+        // Arrange
+        validRequest.setEstimatedDuration(null);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when estimated duration is zero")
+    void shouldThrowExceptionWhenEstimatedDurationIsZero() {
+        // Arrange
+        validRequest.setEstimatedDuration(0);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when estimated duration is negative")
+    void shouldThrowExceptionWhenEstimatedDurationIsNegative() {
+        // Arrange
+        validRequest.setEstimatedDuration(-10);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, 
+                () -> taskService.createTask(validRequest));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+}
