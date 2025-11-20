@@ -44,6 +44,12 @@ public class ServiceTask {
     @Column(nullable = true)
     private Integer estimatedDuration;
 
+    @Column(nullable = true)
+    private Double latitude;
+
+    @Column(nullable = true)
+    private Double longitude;
+
     @NotNull(message = "Status must be specified")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

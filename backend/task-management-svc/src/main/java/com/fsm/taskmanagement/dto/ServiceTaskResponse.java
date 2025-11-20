@@ -22,6 +22,8 @@ public class ServiceTaskResponse {
     private String clientAddress;
     private Priority priority;
     private Integer estimatedDuration;
+    private Double latitude;
+    private Double longitude;
     private Status status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
