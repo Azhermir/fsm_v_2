@@ -1,6 +1,0 @@
-GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-task-svc,com.fsm.task,TaskServiceApplication,8,0,0,0,3,0,2,0,2,0
-task-svc,com.fsm.task.domain,TaskStatus,0,27,0,0,0,5,0,1,0,1
-task-svc,com.fsm.task.domain,ServiceTask.ServiceTaskBuilder,21,63,0,0,0,1,1,10,1,10
-task-svc,com.fsm.task.domain,ServiceTask,97,343,43,39,1,29,44,22,9,16
-task-svc,com.fsm.task.domain,Priority,0,27,0,0,0,5,0,1,0,1
