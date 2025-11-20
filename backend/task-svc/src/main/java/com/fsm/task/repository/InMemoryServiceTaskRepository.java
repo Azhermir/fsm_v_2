@@ -145,6 +145,24 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
         return storage.remove(id) != null;
     }
     
+    @Override
+    public List<ServiceTask> findAllOrderByCreatedAtDesc() {
+        return storage.values().stream()
+                .sorted((t1, t2) -> t2.getCreatedAt().compareTo(t1.getCreatedAt()))
+                .toList();
+    }
+    
+    @Override
+    public List<ServiceTask> findByStatusOrderByCreatedAtDesc(TaskStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> task.getStatus() == status)
+                .sorted((t1, t2) -> t2.getCreatedAt().compareTo(t1.getCreatedAt()))
+                .toList();
+    }
+    
     /**
      * Clear all data from the repository (useful for testing)
      */

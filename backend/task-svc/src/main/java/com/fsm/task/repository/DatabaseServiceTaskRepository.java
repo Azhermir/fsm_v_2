@@ -1,6 +1,7 @@
 package com.fsm.task.repository;
 
 import com.fsm.task.domain.ServiceTask;
+import com.fsm.task.domain.TaskStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
@@ -54,5 +55,18 @@ public class DatabaseServiceTaskRepository implements IServiceTaskRepository {
             return true;
         }
         return false;
+    }
+    
+    @Override
+    public List<ServiceTask> findAllOrderByCreatedAtDesc() {
+        return jpaRepository.findAllByOrderByCreatedAtDesc();
+    }
+    
+    @Override
+    public List<ServiceTask> findByStatusOrderByCreatedAtDesc(TaskStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        return jpaRepository.findByStatusOrderByCreatedAtDesc(status);
     }
 }

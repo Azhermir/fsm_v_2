@@ -1,10 +1,12 @@
 package com.fsm.task.controller;
 
+import com.fsm.task.domain.TaskStatus;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ErrorResponse;
 import com.fsm.task.dto.ServiceTaskResponse;
 import com.fsm.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -76,6 +78,52 @@ public class TaskController {
             throw e;
         } catch (Exception e) {
             log.error("Error creating task", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Get all service tasks
+     * 
+     * @param status optional status filter
+     * @return list of tasks with 200 status
+     */
+    @GetMapping
+    @Operation(summary = "Get all service tasks", 
+               description = "Retrieves all service tasks, optionally filtered by status. Tasks are returned in creation order (newest first)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", 
+                     description = "Tasks retrieved successfully",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ServiceTaskResponse.class))),
+        @ApiResponse(responseCode = "400", 
+                     description = "Invalid status parameter",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", 
+                     description = "Internal server error",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<List<ServiceTaskResponse>> getAllTasks(
+            @Parameter(description = "Optional status filter (UNASSIGNED, ASSIGNED, IN_PROGRESS, COMPLETED)")
+            @RequestParam(required = false) TaskStatus status) {
+        
+        log.info("GET /api/tasks - Retrieving tasks" + (status != null ? " with status: " + status : ""));
+        
+        try {
+            List<ServiceTaskResponse> tasks;
+            if (status != null) {
+                tasks = taskService.getTasksByStatus(status);
+            } else {
+                tasks = taskService.getAllTasks();
+            }
+            return ResponseEntity.ok(tasks);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error retrieving tasks", e);
             throw e;
         }
     }
