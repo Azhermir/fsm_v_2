@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './TechnicianMap.css'
+import AssignModal from './AssignModal'
 
 const API_BASE_URL = 'http://localhost:8080'
 
@@ -59,11 +60,14 @@ const TechnicianMap = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [selectedTaskForAssignment, setSelectedTaskForAssignment] = useState(null)
+  const loadingRef = useRef(false)
 
-  const fetchTechnicians = async () => {
+  const fetchTechnicians = useCallback(async () => {
     // Prevent concurrent fetches
-    if (isLoading) return
+    if (loadingRef.current) return
     
+    loadingRef.current = true
     setIsLoading(true)
     setError('')
 
@@ -89,10 +93,11 @@ const TechnicianMap = () => {
       setError(err.message || 'An error occurred while fetching technicians')
     } finally {
       setIsLoading(false)
+      loadingRef.current = false
     }
-  }
+  }, [])
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/tasks?status=Unassigned`)
 
@@ -114,7 +119,7 @@ const TechnicianMap = () => {
       // Log error but don't override technician error state
       console.error('Error fetching tasks:', err)
     }
-  }
+  }, [])
 
   useEffect(() => {
     // Initial fetch
@@ -128,7 +133,7 @@ const TechnicianMap = () => {
     }, 30000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchTechnicians, fetchTasks])
 
   const handleRefresh = () => {
     fetchTechnicians()
@@ -146,6 +151,41 @@ const TechnicianMap = () => {
 
   const getStatusClass = (status) => {
     return `status-${status.toLowerCase()}`
+  }
+
+  const handleAssignTask = async (technicianId) => {
+    if (!selectedTaskForAssignment) return
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/tasks/${selectedTaskForAssignment.id}/assign`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ technicianId }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to assign task')
+    }
+
+    // Close modal
+    setSelectedTaskForAssignment(null)
+    
+    // Refresh tasks to update map (domain invariant: task marker should be removed after assignment)
+    await fetchTasks()
+    await fetchTechnicians()
+  }
+
+  const handleOpenAssignModal = (task) => {
+    setSelectedTaskForAssignment(task)
+  }
+
+  const handleCloseAssignModal = () => {
+    setSelectedTaskForAssignment(null)
   }
 
   // Default center (can be adjusted based on business needs)
@@ -303,6 +343,12 @@ const TechnicianMap = () => {
                       Due: {new Date(task.dueDate).toLocaleDateString()}
                     </p>
                   )}
+                  <button 
+                    className="assign-button"
+                    onClick={() => handleOpenAssignModal(task)}
+                  >
+                    Assign Task
+                  </button>
                 </div>
               </Popup>
             </Marker>
@@ -314,6 +360,14 @@ const TechnicianMap = () => {
         <div className="no-data-message">
           No technicians with valid location data found.
         </div>
+      )}
+
+      {selectedTaskForAssignment && (
+        <AssignModal
+          task={selectedTaskForAssignment}
+          onAssign={handleAssignTask}
+          onClose={handleCloseAssignModal}
+        />
       )}
     </div>
   )
