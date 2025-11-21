@@ -35,6 +35,12 @@ public class ServiceTaskResponse {
             example = "123 Main St, Springfield, IL 62701")
     private String clientAddress;
     
+    @Schema(description = "Latitude coordinate of the service location", example = "39.7817")
+    private Double latitude;
+    
+    @Schema(description = "Longitude coordinate of the service location", example = "-89.6501")
+    private Double longitude;
+    
     @Schema(description = "Priority level of the task", 
             example = "HIGH", 
             allowableValues = {"LOW", "MEDIUM", "HIGH", "CRITICAL"})

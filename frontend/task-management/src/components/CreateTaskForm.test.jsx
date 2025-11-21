@@ -104,6 +104,8 @@ describe('CreateTaskForm', () => {
             title: 'Fix HVAC',
             description: 'AC not working',
             clientAddress: '123 Main St',
+            latitude: null,
+            longitude: null,
             priority: 'HIGH',
             estimatedDuration: 2,
           }),
@@ -132,6 +134,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm />)
 
     await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
     await user.type(screen.getByLabelText(/client address/i), '123 Main St')
     await user.type(screen.getByLabelText(/estimated duration/i), '2')
 
@@ -139,6 +142,7 @@ describe('CreateTaskForm', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText(/title/i)).toHaveValue('')
+      expect(screen.getByLabelText(/description/i)).toHaveValue('')
       expect(screen.getByLabelText(/client address/i)).toHaveValue('')
       expect(screen.getByLabelText(/estimated duration/i)).toHaveValue(null)
     })
@@ -155,6 +159,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm />)
 
     await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
     await user.type(screen.getByLabelText(/client address/i), '123 Main St')
     await user.type(screen.getByLabelText(/estimated duration/i), '2')
 
@@ -178,6 +183,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm />)
 
     await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
     await user.type(screen.getByLabelText(/client address/i), '123 Main St')
     await user.type(screen.getByLabelText(/estimated duration/i), '2')
 
@@ -198,6 +204,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm />)
 
     await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
     await user.type(screen.getByLabelText(/client address/i), '123 Main St')
     await user.type(screen.getByLabelText(/estimated duration/i), '2')
 
@@ -220,6 +227,7 @@ describe('CreateTaskForm', () => {
     render(<CreateTaskForm />)
 
     await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
     await user.type(screen.getByLabelText(/client address/i), '123 Main St')
     await user.type(screen.getByLabelText(/estimated duration/i), '2')
 
@@ -227,6 +235,164 @@ describe('CreateTaskForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/network error/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows validation error when title exceeds max length', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const titleInput = screen.getByLabelText(/title/i)
+    // Type exactly at the limit, then try to add more via paste which bypasses maxLength
+    const longTitle = 'a'.repeat(201)
+    
+    // Simulate pasting content that exceeds max length
+    fireEvent.change(titleInput, { target: { value: longTitle } })
+    await user.tab() // Trigger blur
+
+    await waitFor(() => {
+      expect(screen.getByText(/title must not exceed 200 characters/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows validation error when description exceeds max length', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const descriptionInput = screen.getByLabelText(/description/i)
+    const longDescription = 'a'.repeat(2001)
+    
+    // Simulate pasting content that exceeds max length
+    fireEvent.change(descriptionInput, { target: { value: longDescription } })
+    await user.tab() // Trigger blur
+
+    await waitFor(() => {
+      expect(screen.getByText(/description must not exceed 2000 characters/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows validation error when required fields are empty on blur', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const titleInput = screen.getByLabelText(/title/i)
+    const descriptionInput = screen.getByLabelText(/description/i)
+    const addressInput = screen.getByLabelText(/client address/i)
+
+    // Focus and blur without entering data
+    await user.click(titleInput)
+    await user.tab()
+
+    await user.click(descriptionInput)
+    await user.tab()
+
+    await user.click(addressInput)
+    await user.tab()
+
+    await waitFor(() => {
+      expect(screen.getByText(/title is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/description is required/i)).toBeInTheDocument()
+      expect(screen.getByText(/client address is required/i)).toBeInTheDocument()
+    })
+  })
+
+  it('prevents form submission when validation errors exist', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const titleInput = screen.getByLabelText(/title/i)
+    const longTitle = 'a'.repeat(201)
+    
+    // Simulate pasting content that exceeds max length
+    fireEvent.change(titleInput, { target: { value: longTitle } })
+    await user.tab() // Trigger blur and validation error
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /create task/i })).toBeDisabled()
+    })
+
+    await user.click(screen.getByRole('button', { name: /create task/i }))
+    
+    // Verify fetch was not called
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('clears validation error when user corrects the field', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const titleInput = screen.getByLabelText(/title/i)
+    
+    // Trigger validation error
+    await user.click(titleInput)
+    await user.tab()
+
+    await waitFor(() => {
+      expect(screen.getByText(/title is required/i)).toBeInTheDocument()
+    })
+
+    // Correct the field
+    await user.type(titleInput, 'Valid title')
+
+    await waitFor(() => {
+      expect(screen.queryByText(/title is required/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it('shows character count for description field', () => {
+    render(<CreateTaskForm />)
+    
+    expect(screen.getByText(/0 \/ 2000 characters/i)).toBeInTheDocument()
+  })
+
+  it('updates character count as user types in description', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    const descriptionInput = screen.getByLabelText(/description/i)
+    await user.type(descriptionInput, 'Test description')
+
+    await waitFor(() => {
+      expect(screen.getByText(/16 \/ 2000 characters/i)).toBeInTheDocument()
+    })
+  })
+
+  it('prevents submission when required fields are missing and shows error message', async () => {
+    const user = userEvent.setup()
+    render(<CreateTaskForm />)
+
+    // Try to submit empty form
+    await user.click(screen.getByRole('button', { name: /create task/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/please fix the validation errors before submitting/i)).toBeInTheDocument()
+    })
+
+    // Verify fetch was not called
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('handles server-side validation errors', async () => {
+    const user = userEvent.setup()
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ 
+        validationErrors: ['Title is required', 'Description must not exceed 2000 characters'] 
+      }),
+    })
+
+    render(<CreateTaskForm />)
+
+    await user.type(screen.getByLabelText(/title/i), 'Fix HVAC')
+    await user.type(screen.getByLabelText(/description/i), 'AC not working')
+    await user.type(screen.getByLabelText(/client address/i), '123 Main St')
+    await user.type(screen.getByLabelText(/estimated duration/i), '2')
+
+    await user.click(screen.getByRole('button', { name: /create task/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/title is required; description must not exceed 2000 characters/i)).toBeInTheDocument()
     })
   })
 })
