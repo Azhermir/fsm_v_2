@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import TaskListScreen from './src/screens/TaskListScreen';
+import TaskDetailScreen from './src/screens/TaskDetailScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -24,7 +25,10 @@ function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <Stack.Screen name="TaskList" component={TaskListScreen} />
+          <>
+            <Stack.Screen name="TaskList" component={TaskListScreen} />
+            <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
+          </>
         ) : (
           <Stack.Screen name="Login" component={LoginScreen} />
         )}

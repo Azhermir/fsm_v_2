@@ -118,3 +118,60 @@ export const sortTasksByPriority = (tasks) => {
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 };
+
+/**
+ * Calculate distance between two geographic coordinates using Haversine formula
+ * @param {number} lat1 - Latitude of first point
+ * @param {number} lon1 - Longitude of first point
+ * @param {number} lat2 - Latitude of second point
+ * @param {number} lon2 - Longitude of second point
+ * @returns {number} Distance in kilometers
+ */
+export const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+  return distance;
+};
+
+/**
+ * Format distance for display
+ * @param {number} distance - Distance in kilometers
+ * @returns {string} Formatted distance string
+ */
+export const formatDistance = (distance) => {
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)}m`;
+  }
+  return `${distance.toFixed(1)}km`;
+};
+
+/**
+ * Parse address to extract coordinates
+ * In a real implementation, this would geocode the address
+ * For now, we return mock coordinates based on address hash
+ * @param {string} address - Task address
+ * @returns {object} Coordinates {latitude, longitude}
+ */
+export const parseAddressCoordinates = (address) => {
+  // Mock implementation - in production, use geocoding service
+  // Using Springfield, IL area coordinates
+  const baseLatitude = 39.7817;
+  const baseLongitude = -89.6501;
+  
+  // Generate pseudo-random offset based on address for demo purposes
+  const hash = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const latOffset = ((hash % 100) - 50) / 1000; // ±0.05 degrees
+  const lonOffset = ((hash % 150) - 75) / 1000; // ±0.075 degrees
+  
+  return {
+    latitude: baseLatitude + latOffset,
+    longitude: baseLongitude + lonOffset,
+  };
+};

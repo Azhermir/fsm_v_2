@@ -92,9 +92,8 @@ const TaskListScreen = ({ navigation }) => {
   }, [user]);
 
   const handleTaskPress = (task) => {
-    // Navigate to task detail screen (to be implemented)
-    console.log('Task pressed:', task.id);
-    // navigation.navigate('TaskDetail', { taskId: task.id });
+    // Navigate to task detail screen
+    navigation.navigate('TaskDetail', { task });
   };
 
   const renderTaskCard = ({ item }) => (

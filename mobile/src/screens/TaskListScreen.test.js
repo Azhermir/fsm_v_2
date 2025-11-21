@@ -124,8 +124,8 @@ describe('TaskListScreen', () => {
   });
 
   it('should handle task press', async () => {
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-    const { getByText } = render(<TaskListScreen />);
+    const mockNavigation = { navigate: jest.fn() };
+    const { getByText } = render(<TaskListScreen navigation={mockNavigation} />);
 
     await waitFor(() => {
       expect(getByText('Fix HVAC System')).toBeTruthy();
@@ -133,8 +133,9 @@ describe('TaskListScreen', () => {
 
     fireEvent.press(getByText('Fix HVAC System'));
 
-    expect(consoleSpy).toHaveBeenCalledWith('Task pressed:', 1);
-    consoleSpy.mockRestore();
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('TaskDetail', {
+      task: expect.objectContaining({ id: 1, title: 'Fix HVAC System' }),
+    });
   });
 
   it('should show error banner when tasks are loaded but API failed', async () => {
