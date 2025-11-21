@@ -46,7 +46,7 @@ const createTaskMarkerIcon = (priority) => {
   
   return L.divIcon({
     className: 'custom-marker task-marker',
-    html: `<div style="background-color: ${color}; width: 25px; height: 25px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+    html: `<div style="background-color: ${color}; width: 25px; height: 25px; border-radius: 2px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
     iconSize: [25, 25],
     iconAnchor: [12, 12],
     popupAnchor: [0, -12]
