@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import TaskDetail from './TaskDetail'
 import './TaskList.css'
 
 const API_BASE_URL = 'http://localhost:8080'
@@ -7,6 +8,8 @@ const TaskList = () => {
   const [tasks, setTasks] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const fetchTasks = async () => {
     setIsLoading(true)
@@ -58,6 +61,45 @@ const TaskList = () => {
     return date.toLocaleString()
   }
 
+  const handleTaskClick = (task) => {
+    setSelectedTask(task)
+    setSuccessMessage('')
+  }
+
+  const handleCloseDetail = () => {
+    setSelectedTask(null)
+  }
+
+  const handleReassign = async (taskId, technicianId, reason) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}/reassign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          technicianId,
+          reason,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to reassign task')
+      }
+
+      // Refresh tasks and close modal
+      await fetchTasks()
+      setSuccessMessage('Task reassigned successfully!')
+      setSelectedTask(null)
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000)
+    } catch (err) {
+      throw new Error(err.message || 'An error occurred during reassignment')
+    }
+  }
+
   return (
     <div className="task-list">
       <div className="task-list-header">
@@ -74,6 +116,12 @@ const TaskList = () => {
       {error && (
         <div className="message error" role="alert">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="message success" role="alert">
+          {successMessage}
         </div>
       )}
 
@@ -96,7 +144,19 @@ const TaskList = () => {
             </thead>
             <tbody>
               {tasks.map((task) => (
-                <tr key={task.id}>
+                <tr 
+                  key={task.id}
+                  onClick={() => handleTaskClick(task)}
+                  className="task-row"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleTaskClick(task)
+                    }
+                  }}
+                >
                   <td>
                     <div className="task-title">{task.title}</div>
                     {task.description && (
@@ -121,6 +181,14 @@ const TaskList = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {selectedTask && (
+        <TaskDetail
+          task={selectedTask}
+          onClose={handleCloseDetail}
+          onReassign={handleReassign}
+        />
       )}
     </div>
   )

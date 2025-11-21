@@ -107,17 +107,23 @@ describe('TaskList', () => {
 
     render(<TaskList />)
 
+    // Wait for all three tasks to be rendered
     await waitFor(() => {
-      const rows = screen.getAllByRole('row').slice(1) // Skip header row
-      const titles = rows.map(row => row.cells[0].textContent)
-      
-      // Emergency Repair (CRITICAL, newest) should be first
-      // Fix HVAC (HIGH) should be second
-      // Install Lights (MEDIUM, oldest) should be last
-      expect(titles[0]).toContain('Emergency Repair')
-      expect(titles[1]).toContain('Fix HVAC')
-      expect(titles[2]).toContain('Install Lights')
+      expect(screen.getByText('Emergency Repair')).toBeInTheDocument()
+      expect(screen.getByText('Fix HVAC')).toBeInTheDocument()
+      expect(screen.getByText('Install Lights')).toBeInTheDocument()
     })
+    
+    // Get rows and verify order
+    const table = screen.getByRole('table')
+    const rows = Array.from(table.querySelectorAll('tbody tr'))
+    
+    // Emergency Repair (CRITICAL, newest) should be first
+    // Fix HVAC (HIGH) should be second
+    // Install Lights (MEDIUM, oldest) should be last
+    expect(rows[0]).toHaveTextContent('Emergency Repair')
+    expect(rows[1]).toHaveTextContent('Fix HVAC')
+    expect(rows[2]).toHaveTextContent('Install Lights')
   })
 
   it('shows loading state while fetching', async () => {
@@ -297,6 +303,119 @@ describe('TaskList', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/failed to fetch tasks/i)).toBeInTheDocument()
+    })
+  })
+
+  it('shows task detail modal when task row is clicked', async () => {
+    const user = userEvent.setup()
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [mockTasks[0]],
+    })
+
+    render(<TaskList />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Fix HVAC')).toBeInTheDocument()
+    })
+
+    const taskRow = screen.getByText('Fix HVAC').closest('tr')
+    await user.click(taskRow)
+
+    await waitFor(() => {
+      expect(screen.getByText('Task Details')).toBeInTheDocument()
+    })
+  })
+
+  it('closes task detail modal when close is clicked', async () => {
+    const user = userEvent.setup()
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [mockTasks[0]],
+    })
+
+    render(<TaskList />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Fix HVAC')).toBeInTheDocument()
+    })
+
+    const taskRow = screen.getByText('Fix HVAC').closest('tr')
+    await user.click(taskRow)
+
+    await waitFor(() => {
+      expect(screen.getByText('Task Details')).toBeInTheDocument()
+    })
+
+    const closeButton = screen.getByLabelText('Close')
+    await user.click(closeButton)
+
+    await waitFor(() => {
+      expect(screen.queryByText('Task Details')).not.toBeInTheDocument()
+    })
+  })
+
+  it('makes task rows clickable with keyboard', async () => {
+    const user = userEvent.setup()
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [mockTasks[0]],
+    })
+
+    render(<TaskList />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Fix HVAC')).toBeInTheDocument()
+    })
+
+    const taskRow = screen.getByText('Fix HVAC').closest('tr')
+    taskRow.focus()
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => {
+      expect(screen.getByText('Task Details')).toBeInTheDocument()
+    })
+  })
+
+  it('shows reassignment form when reassign button is clicked for assigned task', async () => {
+    const user = userEvent.setup()
+    
+    const assignedTask = { ...mockTasks[0], status: 'ASSIGNED', assignedTechnicianId: 5 }
+    
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [assignedTask],
+    })
+
+    render(<TaskList />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Fix HVAC')).toBeInTheDocument()
+    })
+
+    const taskRow = screen.getByText('Fix HVAC').closest('tr')
+    await user.click(taskRow)
+
+    await waitFor(() => {
+      expect(screen.getByText('Task Details')).toBeInTheDocument()
+    })
+
+    // Mock technicians fetch
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        { id: 1, name: 'John Doe', skillLevel: 'SENIOR' },
+      ],
+    })
+
+    const reassignButtons = screen.getAllByRole('button', { name: /reassign/i })
+    await user.click(reassignButtons[0])
+
+    await waitFor(() => {
+      expect(screen.getByText('Reassign Task')).toBeInTheDocument()
     })
   })
 })
