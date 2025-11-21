@@ -28,6 +28,8 @@ const TaskListScreen = ({ navigation }) => {
     try {
       setError(null);
       const data = await fetchTechnicianTasks(user.id);
+      // Sort tasks on client side to ensure consistent priority ordering
+      // regardless of API response order
       const sortedTasks = sortTasksByPriority(data);
       setTasks(sortedTasks);
     } catch (err) {
@@ -151,7 +153,7 @@ const TaskListScreen = ({ navigation }) => {
         <FlatList
           data={tasks}
           renderItem={renderTaskCard}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl

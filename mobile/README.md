@@ -180,13 +180,27 @@ When the API is unavailable, the app displays mock tasks including:
 
 ### API Base URL
 
-To change the API base URL, edit `/src/services/taskService.js`:
+The API base URL can be configured using environment variables:
 
-```javascript
-const API_BASE_URL = 'http://localhost:8080/api';
+1. Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
 ```
 
-For production or different environments, update this URL accordingly.
+2. Edit `.env` and set the API URL:
+```bash
+# For localhost (emulator/simulator)
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8080/api
+
+# For physical device (use your computer's IP)
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080/api
+```
+
+Alternatively, edit the default value in `/src/services/taskService.js`:
+
+```javascript
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+```
 
 ### App Configuration
 
