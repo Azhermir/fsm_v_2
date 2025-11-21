@@ -75,7 +75,7 @@ const CreateTaskForm = () => {
       [name]: value,
     }))
 
-    // Validate the field on change if there's already an error or if the value is long
+    // Validate the field on change to provide immediate feedback
     const error = validateField(name, value)
     if (error) {
       setValidationErrors((prev) => ({
