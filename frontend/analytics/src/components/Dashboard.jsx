@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import PieChart from './PieChart'
 import './Dashboard.css'
 
-const API_BASE_URL = 'http://localhost:8080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const REFRESH_INTERVAL = 30000 // 30 seconds
 
 const Dashboard = ({ disableAutoRefresh = false }) => {
@@ -155,7 +155,7 @@ const Dashboard = ({ disableAutoRefresh = false }) => {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <button onClick={fetchMetrics}>Apply</button>
+            <button onClick={fetchMetrics} aria-label="Apply custom date range">Apply</button>
           </div>
         )}
       </div>

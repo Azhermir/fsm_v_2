@@ -698,7 +698,7 @@ describe('Dashboard', () => {
     await user.selectOptions(select, 'custom')
 
     await waitFor(() => {
-      const applyButton = screen.getByRole('button', { name: 'Apply' })
+      const applyButton = screen.getByRole('button', { name: /apply/i })
       expect(applyButton).toBeInTheDocument()
     })
   })

@@ -72,14 +72,17 @@ const PieChart = ({ data }) => {
         ref={canvasRef} 
         width={300} 
         height={300}
+        role="img"
         aria-label="Priority distribution pie chart"
+        aria-description={data ? `Task distribution: ${data.map(item => `${item.label} ${item.value}`).join(', ')}` : 'No data available'}
       />
       <div className="pie-chart-legend">
-        {data && data.map((item, index) => (
-          <div key={index} className="legend-item">
+        {data && data.map((item) => (
+          <div key={item.label} className="legend-item">
             <span 
               className="legend-color" 
               style={{ backgroundColor: item.color }}
+              aria-hidden="true"
             />
             <span className="legend-label">{item.label}: {item.value}</span>
           </div>
