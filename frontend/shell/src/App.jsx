@@ -1,5 +1,8 @@
 import './App.css'
 
+const TASK_MANAGEMENT_URL = import.meta.env.VITE_TASK_MANAGEMENT_URL || 'http://localhost:3001'
+const ANALYTICS_URL = import.meta.env.VITE_ANALYTICS_URL || 'http://localhost:3002'
+
 function App() {
   return (
     <div className="app">
@@ -8,9 +11,18 @@ function App() {
       </header>
       <main className="app-main">
         <iframe
-          src="http://localhost:3001"
+          src={TASK_MANAGEMENT_URL}
           title="Task Management"
           className="micro-frontend"
+          loading="lazy"
+          sandbox="allow-same-origin allow-scripts allow-forms"
+        />
+        <iframe
+          src={ANALYTICS_URL}
+          title="Analytics Dashboard"
+          className="micro-frontend"
+          loading="lazy"
+          sandbox="allow-same-origin allow-scripts allow-forms"
         />
       </main>
     </div>
