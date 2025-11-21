@@ -132,7 +132,13 @@ const TaskDetailScreen = ({ route, navigation }) => {
 
         {/* Task Title */}
         <View style={styles.section}>
-          <Text style={styles.title}>{task.title}</Text>
+          <Text 
+            style={styles.title}
+            accessibilityRole="header"
+            accessibilityLevel={1}
+          >
+            {task.title}
+          </Text>
         </View>
 
         {/* Task Description */}
@@ -198,6 +204,9 @@ const TaskDetailScreen = ({ route, navigation }) => {
           <TouchableOpacity
             style={styles.navigateButton}
             onPress={handleNavigate}
+            accessibilityRole="button"
+            accessibilityLabel="Navigate to task location"
+            accessibilityHint="Opens your device's maps app with directions to the task location"
           >
             <Text style={styles.navigateButtonText}>🗺️ Navigate to Location</Text>
           </TouchableOpacity>
