@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,16 +29,19 @@ public class ServiceTask {
     private Long id;
     
     /**
-     * Title of the service task - must not be blank (domain invariant)
+     * Title of the service task - must not be blank, max 200 characters (domain invariant)
      */
     @NotBlank(message = "ServiceTask must have a title")
-    @Column(nullable = false)
+    @Size(max = 200, message = "Title must not exceed 200 characters")
+    @Column(nullable = false, length = 200)
     private String title;
     
     /**
-     * Detailed description of the service task
+     * Detailed description of the service task - required, max 2000 characters (domain invariant)
      */
-    @Column(length = 1000)
+    @NotBlank(message = "Description is required")
+    @Size(max = 2000, message = "Description must not exceed 2000 characters")
+    @Column(nullable = false, length = 2000)
     private String description;
     
     /**
@@ -89,8 +93,8 @@ public class ServiceTask {
     /**
      * Factory method to create a ServiceTask with required fields and domain invariant validation
      * 
-     * @param title the task title (must not be blank)
-     * @param description the task description
+     * @param title the task title (must not be blank, max 200 characters)
+     * @param description the task description (must not be blank, max 2000 characters)
      * @param clientAddress the client's address (must not be blank)
      * @param priority the task priority (must be valid enum)
      * @param estimatedDuration the estimated duration in minutes (must be positive)
@@ -107,6 +111,18 @@ public class ServiceTask {
         // Validate domain invariants
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("ServiceTask must have a title");
+        }
+        
+        if (title.length() > 200) {
+            throw new IllegalArgumentException("Title must not exceed 200 characters");
+        }
+        
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+        
+        if (description.length() > 2000) {
+            throw new IllegalArgumentException("Description must not exceed 2000 characters");
         }
         
         if (clientAddress == null || clientAddress.isBlank()) {

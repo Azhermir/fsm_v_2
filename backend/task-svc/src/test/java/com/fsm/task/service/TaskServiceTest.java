@@ -127,28 +127,45 @@ class TaskServiceTest {
     }
     
     @Test
-    @DisplayName("Should create task with null description")
-    void shouldCreateTaskWithNullDescription() {
+    @DisplayName("Should reject task with null description")
+    void shouldRejectTaskWithNullDescription() {
         // Arrange
         validRequest.setDescription(null);
-        ServiceTask taskWithNullDesc = ServiceTask.builder()
-                .id(1L)
-                .title("Fix HVAC System")
-                .description(null)
-                .clientAddress("123 Main St, Springfield")
-                .priority(Priority.HIGH)
-                .estimatedDuration(120)
-                .status(TaskStatus.UNASSIGNED)
-                .createdAt(LocalDateTime.now())
-                .build();
-        when(taskRepository.save(any(ServiceTask.class))).thenReturn(taskWithNullDesc);
         
-        // Act
-        ServiceTaskResponse response = taskService.createTask(validRequest);
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> taskService.createTask(validRequest));
+    }
+    
+    @Test
+    @DisplayName("Should reject task with blank description")
+    void shouldRejectTaskWithBlankDescription() {
+        // Arrange
+        validRequest.setDescription("   ");
         
-        // Assert
-        assertNotNull(response);
-        assertNull(response.getDescription());
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> taskService.createTask(validRequest));
+    }
+    
+    @Test
+    @DisplayName("Should reject task with description exceeding max length")
+    void shouldRejectTaskWithDescriptionExceedingMaxLength() {
+        // Arrange
+        String longDescription = "a".repeat(2001);
+        validRequest.setDescription(longDescription);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> taskService.createTask(validRequest));
+    }
+    
+    @Test
+    @DisplayName("Should reject task with title exceeding max length")
+    void shouldRejectTaskWithTitleExceedingMaxLength() {
+        // Arrange
+        String longTitle = "a".repeat(201);
+        validRequest.setTitle(longTitle);
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> taskService.createTask(validRequest));
     }
     
     @Test

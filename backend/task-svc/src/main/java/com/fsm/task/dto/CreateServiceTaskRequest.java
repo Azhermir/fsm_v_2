@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,11 +23,14 @@ import lombok.NoArgsConstructor;
 public class CreateServiceTaskRequest {
     
     @NotBlank(message = "Title is required")
+    @Size(max = 200, message = "Title must not exceed 200 characters")
     @Schema(description = "Title of the service task", example = "Fix HVAC System", required = true)
     private String title;
     
+    @NotBlank(message = "Description is required")
+    @Size(max = 2000, message = "Description must not exceed 2000 characters")
     @Schema(description = "Detailed description of the service task", 
-            example = "Air conditioning not working properly in the main office")
+            example = "Air conditioning not working properly in the main office", required = true)
     private String description;
     
     @NotBlank(message = "Client address is required")

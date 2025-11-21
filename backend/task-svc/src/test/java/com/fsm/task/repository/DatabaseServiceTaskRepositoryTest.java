@@ -365,11 +365,11 @@ class DatabaseServiceTaskRepositoryTest {
     }
     
     @Test
-    @DisplayName("Should handle tasks with null description")
-    void shouldHandleTasksWithNullDescription() {
+    @DisplayName("Should handle tasks with valid description")
+    void shouldHandleTasksWithValidDescription() {
         // Arrange
         ServiceTask task = ServiceTask.createServiceTask(
-                "Task", null, "Address", Priority.LOW, 60);
+                "Task", "Valid description", "Address", Priority.LOW, 60);
         
         // Act
         ServiceTask saved = repository.save(task);
@@ -379,7 +379,15 @@ class DatabaseServiceTaskRepositoryTest {
         // Assert
         Optional<ServiceTask> found = repository.findById(saved.getId());
         assertTrue(found.isPresent());
-        assertNull(found.get().getDescription());
+        assertEquals("Valid description", found.get().getDescription());
+    }
+    
+    @Test
+    @DisplayName("Should reject tasks with null description")
+    void shouldRejectTasksWithNullDescription() {
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () ->
+                ServiceTask.createServiceTask("Task", null, "Address", Priority.LOW, 60));
     }
     
     @Test

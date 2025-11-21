@@ -255,15 +255,77 @@ class ServiceTaskTest {
     }
     
     @Test
-    @DisplayName("Should allow null description")
-    void shouldAllowNullDescription() {
+    @DisplayName("Should reject null description")
+    void shouldRejectNullDescription() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                ServiceTask.createServiceTask("Title", null, "Address", Priority.LOW, 60));
+        
+        assertEquals("Description is required", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should reject blank description")
+    void shouldRejectBlankDescription() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                ServiceTask.createServiceTask("Title", "   ", "Address", Priority.LOW, 60));
+        
+        assertEquals("Description is required", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should reject description exceeding max length")
+    void shouldRejectDescriptionExceedingMaxLength() {
+        // Arrange
+        String longDescription = "a".repeat(2001);
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                ServiceTask.createServiceTask("Title", longDescription, "Address", Priority.LOW, 60));
+        
+        assertEquals("Description must not exceed 2000 characters", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should accept description at max length")
+    void shouldAcceptDescriptionAtMaxLength() {
+        // Arrange
+        String maxDescription = "a".repeat(2000);
+        
         // Act
-        ServiceTask task = ServiceTask.createServiceTask(
-                "Title", null, "Address", Priority.LOW, 60);
+        ServiceTask task = ServiceTask.createServiceTask("Title", maxDescription, "Address", Priority.LOW, 60);
         
         // Assert
         assertNotNull(task);
-        assertNull(task.getDescription());
+        assertEquals(maxDescription, task.getDescription());
+    }
+    
+    @Test
+    @DisplayName("Should reject title exceeding max length")
+    void shouldRejectTitleExceedingMaxLength() {
+        // Arrange
+        String longTitle = "a".repeat(201);
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                ServiceTask.createServiceTask(longTitle, "Description", "Address", Priority.LOW, 60));
+        
+        assertEquals("Title must not exceed 200 characters", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should accept title at max length")
+    void shouldAcceptTitleAtMaxLength() {
+        // Arrange
+        String maxTitle = "a".repeat(200);
+        
+        // Act
+        ServiceTask task = ServiceTask.createServiceTask(maxTitle, "Description", "Address", Priority.LOW, 60);
+        
+        // Assert
+        assertNotNull(task);
+        assertEquals(maxTitle, task.getTitle());
     }
     
     @Test
