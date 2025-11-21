@@ -236,6 +236,9 @@ public class TaskService {
             throw new IllegalArgumentException("Cannot reassign to the same technician");
         }
         
+        // Capture old technician ID before updating
+        Long oldTechnicianId = task.getAssignedTo();
+        
         // Set reassignedBy to "system" if not provided
         String reassignedBy = request.getReassignedBy();
         if (reassignedBy == null || reassignedBy.isBlank()) {
@@ -257,7 +260,7 @@ public class TaskService {
         taskRepository.save(task);
         
         log.info("Task {} reassigned from technician {} to {} successfully", 
-                taskId, task.getAssignedTo(), request.getTechnicianId());
+                taskId, oldTechnicianId, request.getTechnicianId());
         
         return TaskAssignmentResponse.builder()
                 .id(savedAssignment.getId())
@@ -280,7 +283,11 @@ public class TaskService {
      */
     @Transactional(readOnly = true)
     public List<ServiceTaskResponse> getTechnicianTasks(Long technicianId, TaskStatus status) {
-        log.info("Retrieving tasks for technician {}" + (status != null ? " with status: " + status : ""), technicianId);
+        if (status != null) {
+            log.info("Retrieving tasks for technician {} with status: {}", technicianId, status);
+        } else {
+            log.info("Retrieving tasks for technician {}", technicianId);
+        }
         
         List<ServiceTask> tasks;
         if (status != null) {
