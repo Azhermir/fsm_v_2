@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import NetInfo from '@react-native-community/netinfo';
 import {
   getPriorityColor,
   getStatusColor,
@@ -19,14 +20,20 @@ import {
   parseAddressCoordinates,
   calculateDistance,
   formatDistance,
+  updateTaskStatus,
 } from '../services/taskService';
+import { addToQueue } from '../services/offlineQueueService';
+import CompletionModal from '../components/CompletionModal';
 
 const TaskDetailScreen = ({ route, navigation }) => {
-  const { task } = route.params;
+  const { task: initialTask } = route.params;
+  const [task, setTask] = useState(initialTask);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [locationPermission, setLocationPermission] = useState(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   // Get task coordinates
   const taskCoordinates = parseAddressCoordinates(task.clientAddress);
@@ -102,6 +109,92 @@ const TaskDetailScreen = ({ route, navigation }) => {
         console.error('Error opening maps:', err);
         Alert.alert('Error', 'Unable to open maps application');
       });
+  };
+
+  const handleStartTask = async () => {
+    Alert.alert(
+      'Start Task',
+      'Are you sure you want to start this task?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Start',
+          onPress: async () => {
+            setIsUpdatingStatus(true);
+            try {
+              // Check network connectivity
+              const networkState = await NetInfo.fetch();
+              
+              if (networkState.isConnected && networkState.isInternetReachable) {
+                // Online: Update immediately
+                const updatedTask = await updateTaskStatus(task.id, 'IN_PROGRESS');
+                setTask(updatedTask);
+                Alert.alert('Success', 'Task started successfully');
+              } else {
+                // Offline: Add to queue
+                await addToQueue(task.id, 'IN_PROGRESS');
+                const updatedTask = { ...task, status: 'IN_PROGRESS' };
+                setTask(updatedTask);
+                Alert.alert(
+                  'Queued',
+                  'You are offline. The status update will be sent when you are back online.'
+                );
+              }
+            } catch (error) {
+              console.error('Error starting task:', error);
+              Alert.alert('Error', 'Failed to start task. Please try again.');
+            } finally {
+              setIsUpdatingStatus(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCompleteTask = async (workSummary) => {
+    setIsUpdatingStatus(true);
+    try {
+      // Check network connectivity
+      const networkState = await NetInfo.fetch();
+      
+      if (networkState.isConnected && networkState.isInternetReachable) {
+        // Online: Update immediately
+        const updatedTask = await updateTaskStatus(task.id, 'COMPLETED', workSummary);
+        setTask(updatedTask);
+        setShowCompletionModal(false);
+        Alert.alert('Success', 'Task completed successfully', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      } else {
+        // Offline: Add to queue
+        await addToQueue(task.id, 'COMPLETED', workSummary);
+        const updatedTask = { ...task, status: 'COMPLETED' };
+        setTask(updatedTask);
+        setShowCompletionModal(false);
+        Alert.alert(
+          'Queued',
+          'You are offline. The status update will be sent when you are back online.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+      Alert.alert('Error', 'Failed to complete task. Please try again.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   return (
@@ -256,7 +349,54 @@ const TaskDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
         )}
+
+        {/* Status Action Buttons */}
+        {task.status === 'ASSIGNED' && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.startButton, isUpdatingStatus && styles.buttonDisabled]}
+              onPress={handleStartTask}
+              disabled={isUpdatingStatus}
+              accessibilityRole="button"
+              accessibilityLabel="Start task"
+              accessibilityHint="Changes task status to In Progress"
+            >
+              {isUpdatingStatus ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.actionButtonText}>▶️ Start Task</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {task.status === 'IN_PROGRESS' && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.completeButton, isUpdatingStatus && styles.buttonDisabled]}
+              onPress={() => setShowCompletionModal(true)}
+              disabled={isUpdatingStatus}
+              accessibilityRole="button"
+              accessibilityLabel="Complete task"
+              accessibilityHint="Opens completion form to mark task as completed"
+            >
+              {isUpdatingStatus ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.actionButtonText}>✓ Complete Task</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
+
+      {/* Completion Modal */}
+      <CompletionModal
+        visible={showCompletionModal}
+        onClose={() => setShowCompletionModal(false)}
+        onSubmit={handleCompleteTask}
+        taskTitle={task.title}
+      />
     </View>
   );
 };
@@ -407,6 +547,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#856404',
     lineHeight: 24,
+  },
+  actionButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  startButton: {
+    backgroundColor: '#ffc107',
+  },
+  completeButton: {
+    backgroundColor: '#28a745',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
 

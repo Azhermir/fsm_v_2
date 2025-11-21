@@ -36,6 +36,46 @@ export const fetchTechnicianTasks = async (technicianId, status = null) => {
 };
 
 /**
+ * Update task status
+ * @param {number} taskId - The ID of the task
+ * @param {string} status - The new status (IN_PROGRESS, COMPLETED)
+ * @param {string} workSummary - Optional work summary (required for COMPLETED)
+ * @returns {Promise<Object>} Updated task
+ */
+export const updateTaskStatus = async (taskId, status, workSummary = null) => {
+  try {
+    const url = `${API_BASE_URL}/tasks/${taskId}/status`;
+    
+    const body = {
+      status: status,
+    };
+    
+    if (workSummary) {
+      body.workSummary = workSummary;
+    }
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating task status:', error);
+    throw error;
+  }
+};
+
+/**
  * Get priority color based on priority level
  * @param {string} priority - Priority level (LOW, MEDIUM, HIGH, CRITICAL)
  * @returns {string} Color code

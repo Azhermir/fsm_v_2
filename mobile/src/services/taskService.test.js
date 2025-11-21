@@ -1,5 +1,6 @@
 import {
   fetchTechnicianTasks,
+  updateTaskStatus,
   getPriorityColor,
   getStatusColor,
   formatDuration,
@@ -70,6 +71,90 @@ describe('taskService', () => {
       global.fetch.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(fetchTechnicianTasks('tech-001')).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('updateTaskStatus', () => {
+    it('should update task status to IN_PROGRESS successfully', async () => {
+      const mockResponse = {
+        id: 1,
+        title: 'Fix HVAC',
+        status: 'IN_PROGRESS',
+      };
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await updateTaskStatus(1, 'IN_PROGRESS');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tasks/1/status'),
+        expect.objectContaining({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'IN_PROGRESS' }),
+        })
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should update task status to COMPLETED with work summary', async () => {
+      const mockResponse = {
+        id: 1,
+        title: 'Fix HVAC',
+        status: 'COMPLETED',
+        workSummary: 'Fixed the system',
+      };
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      const result = await updateTaskStatus(1, 'COMPLETED', 'Fixed the system');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tasks/1/status'),
+        expect.objectContaining({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'COMPLETED',
+            workSummary: 'Fixed the system',
+          }),
+        })
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should throw error on HTTP error', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({ message: 'Invalid status transition' }),
+      });
+
+      await expect(updateTaskStatus(1, 'COMPLETED')).rejects.toThrow('Invalid status transition');
+    });
+
+    it('should throw error on network error', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('Network error'));
+
+      await expect(updateTaskStatus(1, 'IN_PROGRESS')).rejects.toThrow('Network error');
+    });
+
+    it('should handle error response without JSON', async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('Not JSON');
+        },
+      });
+
+      await expect(updateTaskStatus(1, 'IN_PROGRESS')).rejects.toThrow('HTTP error! status: 500');
     });
   });
 
