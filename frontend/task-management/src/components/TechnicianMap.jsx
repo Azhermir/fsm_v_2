@@ -40,6 +40,9 @@ const TechnicianMap = () => {
   const [lastUpdate, setLastUpdate] = useState(null)
 
   const fetchTechnicians = async () => {
+    // Prevent concurrent fetches
+    if (isLoading) return
+    
     setIsLoading(true)
     setError('')
 
@@ -102,10 +105,16 @@ const TechnicianMap = () => {
 
   // Calculate center based on technicians if available
   const mapCenter = technicians.length > 0
-    ? [
-        technicians.reduce((sum, t) => sum + t.currentLocation.latitude, 0) / technicians.length,
-        technicians.reduce((sum, t) => sum + t.currentLocation.longitude, 0) / technicians.length
-      ]
+    ? (() => {
+        const sum = technicians.reduce(
+          (acc, t) => ({
+            lat: acc.lat + t.currentLocation.latitude,
+            lng: acc.lng + t.currentLocation.longitude
+          }),
+          { lat: 0, lng: 0 }
+        )
+        return [sum.lat / technicians.length, sum.lng / technicians.length]
+      })()
     : defaultCenter
 
   return (
