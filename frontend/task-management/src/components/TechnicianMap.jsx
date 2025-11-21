@@ -33,8 +33,29 @@ const createMarkerIcon = (status) => {
   })
 }
 
+// Create custom marker icons for tasks based on priority (square shape to distinguish from technicians)
+const createTaskMarkerIcon = (priority) => {
+  const colors = {
+    Critical: '#dc3545',  // red
+    High: '#fd7e14',      // orange
+    Medium: '#ffc107',    // yellow
+    Low: '#28a745'        // green
+  }
+  
+  const color = colors[priority] || '#6c757d'
+  
+  return L.divIcon({
+    className: 'custom-marker task-marker',
+    html: `<div style="background-color: ${color}; width: 25px; height: 25px; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [25, 25],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
+  })
+}
+
 const TechnicianMap = () => {
   const [technicians, setTechnicians] = useState([])
+  const [tasks, setTasks] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [lastUpdate, setLastUpdate] = useState(null)
@@ -71,13 +92,39 @@ const TechnicianMap = () => {
     }
   }
 
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tasks?status=Unassigned`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch tasks')
+      }
+
+      const data = await response.json()
+      
+      // Filter tasks with valid location data (must have address with geocoded coordinates)
+      const validTasks = data.filter(task => 
+        task.address && 
+        task.address.latitude !== null && 
+        task.address.longitude !== null
+      )
+
+      setTasks(validTasks)
+    } catch (err) {
+      // Log error but don't override technician error state
+      console.error('Error fetching tasks:', err)
+    }
+  }
+
   useEffect(() => {
     // Initial fetch
     fetchTechnicians()
+    fetchTasks()
 
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchTechnicians()
+      fetchTasks()
     }, 30000)
 
     return () => clearInterval(interval)
@@ -85,6 +132,7 @@ const TechnicianMap = () => {
 
   const handleRefresh = () => {
     fetchTechnicians()
+    fetchTasks()
   }
 
   const getStatusLabel = (status) => {
@@ -103,19 +151,24 @@ const TechnicianMap = () => {
   // Default center (can be adjusted based on business needs)
   const defaultCenter = [37.7749, -122.4194] // San Francisco
 
-  // Calculate center based on technicians if available
-  const mapCenter = technicians.length > 0
-    ? (() => {
-        const sum = technicians.reduce(
-          (acc, t) => ({
-            lat: acc.lat + t.currentLocation.latitude,
-            lng: acc.lng + t.currentLocation.longitude
-          }),
-          { lat: 0, lng: 0 }
-        )
-        return [sum.lat / technicians.length, sum.lng / technicians.length]
-      })()
-    : defaultCenter
+  // Calculate center based on technicians and tasks if available
+  const mapCenter = (() => {
+    const allLocations = [
+      ...technicians.map(t => ({ lat: t.currentLocation.latitude, lng: t.currentLocation.longitude })),
+      ...tasks.map(t => ({ lat: t.address.latitude, lng: t.address.longitude }))
+    ]
+    
+    if (allLocations.length === 0) {
+      return defaultCenter
+    }
+    
+    const sum = allLocations.reduce(
+      (acc, loc) => ({ lat: acc.lat + loc.lat, lng: acc.lng + loc.lng }),
+      { lat: 0, lng: 0 }
+    )
+    
+    return [sum.lat / allLocations.length, sum.lng / allLocations.length]
+  })()
 
   return (
     <div className="technician-map-container">
@@ -144,18 +197,40 @@ const TechnicianMap = () => {
       )}
 
       <div className="legend">
-        <span className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: '#28a745' }}></span>
-          Available
-        </span>
-        <span className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: '#ffc107' }}></span>
-          Busy
-        </span>
-        <span className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: '#6c757d' }}></span>
-          Offline
-        </span>
+        <div className="legend-section">
+          <strong>Technicians:</strong>
+          <span className="legend-item">
+            <span className="legend-color technician-marker" style={{ backgroundColor: '#28a745' }}></span>
+            Available
+          </span>
+          <span className="legend-item">
+            <span className="legend-color technician-marker" style={{ backgroundColor: '#ffc107' }}></span>
+            Busy
+          </span>
+          <span className="legend-item">
+            <span className="legend-color technician-marker" style={{ backgroundColor: '#6c757d' }}></span>
+            Offline
+          </span>
+        </div>
+        <div className="legend-section">
+          <strong>Tasks:</strong>
+          <span className="legend-item">
+            <span className="legend-color task-marker" style={{ backgroundColor: '#dc3545' }}></span>
+            Critical
+          </span>
+          <span className="legend-item">
+            <span className="legend-color task-marker" style={{ backgroundColor: '#fd7e14' }}></span>
+            High
+          </span>
+          <span className="legend-item">
+            <span className="legend-color task-marker" style={{ backgroundColor: '#ffc107' }}></span>
+            Medium
+          </span>
+          <span className="legend-item">
+            <span className="legend-color task-marker" style={{ backgroundColor: '#28a745' }}></span>
+            Low
+          </span>
+        </div>
       </div>
 
       <div className="map-wrapper">
@@ -191,6 +266,41 @@ const TechnicianMap = () => {
                   {technician.currentLocation.timestamp && (
                     <p className="location-time">
                       Location updated: {new Date(technician.currentLocation.timestamp).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+          
+          {tasks.map((task) => (
+            <Marker
+              key={`task-${task.id}`}
+              position={[
+                task.address.latitude,
+                task.address.longitude
+              ]}
+              icon={createTaskMarkerIcon(task.priority)}
+            >
+              <Popup>
+                <div className="task-popup">
+                  <h3>{task.title}</h3>
+                  <p className={`priority priority-${task.priority.toLowerCase()}`}>
+                    Priority: {task.priority}
+                  </p>
+                  {task.description && (
+                    <p className="description">{task.description}</p>
+                  )}
+                  {task.address && (
+                    <div className="address">
+                      <p><strong>Location:</strong></p>
+                      <p>{task.address.street}</p>
+                      <p>{task.address.city}, {task.address.state} {task.address.zipCode}</p>
+                    </div>
+                  )}
+                  {task.dueDate && (
+                    <p className="due-date">
+                      Due: {new Date(task.dueDate).toLocaleDateString()}
                     </p>
                   )}
                 </div>
