@@ -859,4 +859,209 @@ class TaskServiceTest {
         assertTrue(exception.getMessage().contains("Task can only be assigned when in UNASSIGNED or ASSIGNED status"));
         verify(assignmentRepository, never()).save(any());
     }
+    
+    // ==================== Reassignment Tests ====================
+    
+    @Test
+    @DisplayName("Should successfully reassign task to different technician")
+    void shouldSuccessfullyReassignTask() {
+        // Arrange
+        Long taskId = 1L;
+        Long oldTechnicianId = 100L;
+        Long newTechnicianId = 200L;
+        
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(newTechnicianId)
+                .reason("Technician 100 is unavailable")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Test Task")
+                .description("Description")
+                .clientAddress("123 Test St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(60)
+                .status(TaskStatus.ASSIGNED)
+                .assignedTo(oldTechnicianId)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        TaskAssignment newAssignment = TaskAssignment.builder()
+                .id(2L)
+                .taskId(taskId)
+                .technicianId(newTechnicianId)
+                .assignedBy("dispatcher1")
+                .reason("Technician 100 is unavailable")
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(TaskAssignment.class))).thenReturn(newAssignment);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        
+        // Act
+        TaskAssignmentResponse response = taskService.reassignTask(taskId, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(newTechnicianId, response.getTechnicianId());
+        assertEquals(taskId, response.getTaskId());
+        assertEquals("dispatcher1", response.getAssignedBy());
+        
+        // Verify the task's assignedTo field was updated
+        ArgumentCaptor<ServiceTask> taskCaptor = ArgumentCaptor.forClass(ServiceTask.class);
+        verify(taskRepository).save(taskCaptor.capture());
+        assertEquals(newTechnicianId, taskCaptor.getValue().getAssignedTo());
+        
+        // Verify new assignment was created with reason
+        ArgumentCaptor<TaskAssignment> assignmentCaptor = ArgumentCaptor.forClass(TaskAssignment.class);
+        verify(assignmentRepository).save(assignmentCaptor.capture());
+        assertEquals(newTechnicianId, assignmentCaptor.getValue().getTechnicianId());
+        assertEquals("Technician 100 is unavailable", assignmentCaptor.getValue().getReason());
+    }
+    
+    @Test
+    @DisplayName("Should use 'system' as default reassignedBy when not provided")
+    void shouldUseSystemAsDefaultReassignedBy() {
+        // Arrange
+        Long taskId = 1L;
+        Long oldTechnicianId = 100L;
+        Long newTechnicianId = 200L;
+        
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(newTechnicianId)
+                .reason("Reassignment reason")
+                .build();
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Test Task")
+                .description("Description")
+                .clientAddress("123 Test St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(60)
+                .status(TaskStatus.ASSIGNED)
+                .assignedTo(oldTechnicianId)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        TaskAssignment newAssignment = TaskAssignment.builder()
+                .id(2L)
+                .taskId(taskId)
+                .technicianId(newTechnicianId)
+                .assignedBy("system")
+                .reason("Reassignment reason")
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(TaskAssignment.class))).thenReturn(newAssignment);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        
+        // Act
+        taskService.reassignTask(taskId, request);
+        
+        // Assert
+        ArgumentCaptor<TaskAssignment> assignmentCaptor = ArgumentCaptor.forClass(TaskAssignment.class);
+        verify(assignmentRepository).save(assignmentCaptor.capture());
+        assertEquals("system", assignmentCaptor.getValue().getAssignedBy());
+    }
+    
+    @Test
+    @DisplayName("Should fail to reassign task when task not found")
+    void shouldFailToReassignTaskWhenTaskNotFound() {
+        // Arrange
+        Long taskId = 999L;
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(200L)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.reassignTask(taskId, request)
+        );
+        
+        assertTrue(exception.getMessage().contains("Task not found with id: " + taskId));
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    @DisplayName("Should fail to reassign task when task is not currently assigned")
+    void shouldFailToReassignTaskWhenNotAssigned() {
+        // Arrange
+        Long taskId = 1L;
+        
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(200L)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Test Task")
+                .description("Description")
+                .clientAddress("123 Test St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(60)
+                .status(TaskStatus.UNASSIGNED)
+                .assignedTo(null) // Not assigned
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.reassignTask(taskId, request)
+        );
+        
+        assertTrue(exception.getMessage().contains("Task must be currently assigned to reassign"));
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    @DisplayName("Should fail to reassign task to the same technician")
+    void shouldFailToReassignTaskToSameTechnician() {
+        // Arrange
+        Long taskId = 1L;
+        Long technicianId = 100L;
+        
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(technicianId)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Test Task")
+                .description("Description")
+                .clientAddress("123 Test St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(60)
+                .status(TaskStatus.ASSIGNED)
+                .assignedTo(technicianId) // Same technician
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.reassignTask(taskId, request)
+        );
+        
+        assertTrue(exception.getMessage().contains("Cannot reassign to the same technician"));
+        verify(assignmentRepository, never()).save(any());
+    }
 }

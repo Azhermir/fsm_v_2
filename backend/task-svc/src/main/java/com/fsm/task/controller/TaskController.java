@@ -226,6 +226,53 @@ public class TaskController {
     }
     
     /**
+     * Reassign a task to a different technician
+     * 
+     * @param taskId the task ID
+     * @param request the reassignment request
+     * @return the new assignment response with 200 status
+     */
+    @PostMapping("/{taskId}/reassign")
+    @Operation(summary = "Reassign task to different technician", 
+               description = "Reassigns a task to a different technician. Task must be currently assigned. Maintains reassignment history for audit trail.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", 
+                     description = "Task reassigned successfully",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = TaskAssignmentResponse.class))),
+        @ApiResponse(responseCode = "400", 
+                     description = "Invalid request data or task cannot be reassigned",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", 
+                     description = "Task not found",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", 
+                     description = "Internal server error",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TaskAssignmentResponse> reassignTask(
+            @Parameter(description = "Task ID")
+            @PathVariable Long taskId,
+            @Valid @RequestBody com.fsm.task.dto.ReassignTaskRequest request) {
+        
+        log.info("POST /api/tasks/{}/reassign - Reassigning task to technician {}", taskId, request.getTechnicianId());
+        
+        try {
+            TaskAssignmentResponse response = taskService.reassignTask(taskId, request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error reassigning task", e);
+            throw e;
+        }
+    }
+    
+    /**
      * Handle validation errors
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)

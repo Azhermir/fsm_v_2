@@ -208,6 +208,67 @@ public class TaskService {
     }
     
     /**
+     * Reassign a task to a different technician
+     * Domain invariants:
+     * - Task must exist and be currently assigned
+     * - Cannot reassign to the same technician
+     * - Reassignment history must be maintained for audit
+     * 
+     * @param taskId the task ID
+     * @param request the reassignment request containing new technician ID and optional reason
+     * @return the new assignment response
+     */
+    @Transactional
+    public TaskAssignmentResponse reassignTask(Long taskId, com.fsm.task.dto.ReassignTaskRequest request) {
+        log.info("Reassigning task {} to technician {}", taskId, request.getTechnicianId());
+        
+        // Find the task
+        ServiceTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + taskId));
+        
+        // Validate task must be currently assigned to reassign
+        if (task.getAssignedTo() == null) {
+            throw new IllegalArgumentException("Task must be currently assigned to reassign");
+        }
+        
+        // Validate cannot reassign to the same technician
+        if (task.getAssignedTo().equals(request.getTechnicianId())) {
+            throw new IllegalArgumentException("Cannot reassign to the same technician");
+        }
+        
+        // Set reassignedBy to "system" if not provided
+        String reassignedBy = request.getReassignedBy();
+        if (reassignedBy == null || reassignedBy.isBlank()) {
+            reassignedBy = "system";
+        }
+        
+        // Create new assignment record with reason (previous assignment remains in history)
+        TaskAssignment assignment = TaskAssignment.createAssignment(
+                taskId,
+                request.getTechnicianId(),
+                reassignedBy,
+                request.getReason()
+        );
+        
+        TaskAssignment savedAssignment = assignmentRepository.save(assignment);
+        
+        // Update task's assignedTo field to new technician
+        task.setAssignedTo(request.getTechnicianId());
+        taskRepository.save(task);
+        
+        log.info("Task {} reassigned from technician {} to {} successfully", 
+                taskId, task.getAssignedTo(), request.getTechnicianId());
+        
+        return TaskAssignmentResponse.builder()
+                .id(savedAssignment.getId())
+                .taskId(savedAssignment.getTaskId())
+                .technicianId(savedAssignment.getTechnicianId())
+                .assignedAt(savedAssignment.getAssignedAt())
+                .assignedBy(savedAssignment.getAssignedBy())
+                .build();
+    }
+    
+    /**
      * Convert ServiceTask entity to ServiceTaskResponse DTO
      * 
      * @param task the task entity

@@ -21,6 +21,15 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     Optional<TaskAssignment> findTopByTaskIdOrderByAssignedAtDesc(Long taskId);
     
     /**
+     * Find all assignments for a given task ordered by assignment time (newest first)
+     * This provides the reassignment history for audit purposes
+     * 
+     * @param taskId the task ID
+     * @return list of all assignments for the task (reassignment history)
+     */
+    java.util.List<TaskAssignment> findByTaskIdOrderByAssignedAtDesc(Long taskId);
+    
+    /**
      * Find all assignments for a given technician
      * 
      * @param technicianId the technician ID
