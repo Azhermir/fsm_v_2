@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import PropTypes from 'prop-types'
 import './PieChart.css'
 
 const PieChart = ({ data }) => {
@@ -85,6 +86,16 @@ const PieChart = ({ data }) => {
         ))}
       </div>
     </div>
+  )
+}
+
+PieChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.number.isRequired,
+      color: PropTypes.string.isRequired
+    })
   )
 }
 

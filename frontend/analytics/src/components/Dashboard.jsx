@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import PieChart from './PieChart'
 import './Dashboard.css'
 
@@ -194,6 +195,10 @@ const Dashboard = ({ disableAutoRefresh = false }) => {
       )}
     </div>
   )
+}
+
+Dashboard.propTypes = {
+  disableAutoRefresh: PropTypes.bool
 }
 
 export default Dashboard
