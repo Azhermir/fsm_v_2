@@ -57,6 +57,9 @@ public class ServiceTaskResponse {
     @Schema(description = "ID of the technician assigned to this task", example = "1")
     private Long assignedTo;
     
+    @Schema(description = "ID of the user who created this task", example = "1")
+    private Long createdBy;
+    
     @Schema(description = "Timestamp when the task was created", 
             example = "2025-11-20T22:00:00")
     private LocalDateTime createdAt;

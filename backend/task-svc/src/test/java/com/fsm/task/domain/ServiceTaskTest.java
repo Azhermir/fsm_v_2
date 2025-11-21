@@ -74,7 +74,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        null, "Description", "Address", Priority.MEDIUM, 90)
+                        null, "Description", "Address", Priority.MEDIUM, 90, 1L)
         );
         assertEquals("ServiceTask must have a title", exception.getMessage());
     }
@@ -86,7 +86,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "   ", "Description", "Address", Priority.MEDIUM, 90)
+                        "   ", "Description", "Address", Priority.MEDIUM, 90, 1L)
         );
         assertEquals("ServiceTask must have a title", exception.getMessage());
     }
@@ -98,7 +98,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "", "Description", "Address", Priority.MEDIUM, 90)
+                        "", "Description", "Address", Priority.MEDIUM, 90, 1L)
         );
         assertEquals("ServiceTask must have a title", exception.getMessage());
     }
@@ -110,7 +110,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", "Address", null, 90)
+                        "Title", "Description", "Address", null, 90, 1L)
         );
         assertEquals("Priority must be one of the defined enum values", exception.getMessage());
     }
@@ -134,7 +134,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", "Address", Priority.MEDIUM, 0)
+                        "Title", "Description", "Address", Priority.MEDIUM, 0, 1L)
         );
         assertEquals("EstimatedDuration must be positive", exception.getMessage());
     }
@@ -146,7 +146,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", "Address", Priority.MEDIUM, -10)
+                        "Title", "Description", "Address", Priority.MEDIUM, -10, 1L)
         );
         assertEquals("EstimatedDuration must be positive", exception.getMessage());
     }
@@ -158,7 +158,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", null, Priority.MEDIUM, 90)
+                        "Title", "Description", null, Priority.MEDIUM, 90, 1L)
         );
         assertEquals("Client address must not be blank", exception.getMessage());
     }
@@ -170,7 +170,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", "   ", Priority.MEDIUM, 90)
+                        "Title", "Description", "   ", Priority.MEDIUM, 90, 1L)
         );
         assertEquals("Client address must not be blank", exception.getMessage());
     }
@@ -182,7 +182,7 @@ class ServiceTaskTest {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> ServiceTask.createServiceTask(
-                        "Title", "Description", "", Priority.MEDIUM, 90)
+                        "Title", "Description", "", Priority.MEDIUM, 90, 1L)
         );
         assertEquals("Client address must not be blank", exception.getMessage());
     }
@@ -193,7 +193,7 @@ class ServiceTaskTest {
         // Test all priority enum values
         for (Priority priority : Priority.values()) {
             ServiceTask task = ServiceTask.createServiceTask(
-                    "Task", "Description", "Address", priority, 60);
+                    "Task", "Description", "Address", priority, 60, 1L);
             assertEquals(priority, task.getPriority());
         }
     }
@@ -259,7 +259,7 @@ class ServiceTaskTest {
     void shouldRejectNullDescription() {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                ServiceTask.createServiceTask("Title", null, "Address", Priority.LOW, 60));
+                ServiceTask.createServiceTask("Title", null, "Address", Priority.LOW, 60, 1L));
         
         assertEquals("Description is required", exception.getMessage());
     }
@@ -269,7 +269,7 @@ class ServiceTaskTest {
     void shouldRejectBlankDescription() {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                ServiceTask.createServiceTask("Title", "   ", "Address", Priority.LOW, 60));
+                ServiceTask.createServiceTask("Title", "   ", "Address", Priority.LOW, 60, 1L));
         
         assertEquals("Description is required", exception.getMessage());
     }
@@ -282,7 +282,7 @@ class ServiceTaskTest {
         
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                ServiceTask.createServiceTask("Title", longDescription, "Address", Priority.LOW, 60));
+                ServiceTask.createServiceTask("Title", longDescription, "Address", Priority.LOW, 60, 1L));
         
         assertEquals("Description must not exceed 2000 characters", exception.getMessage());
     }
@@ -294,7 +294,7 @@ class ServiceTaskTest {
         String maxDescription = "a".repeat(2000);
         
         // Act
-        ServiceTask task = ServiceTask.createServiceTask("Title", maxDescription, "Address", Priority.LOW, 60);
+        ServiceTask task = ServiceTask.createServiceTask("Title", maxDescription, "Address", Priority.LOW, 60, 1L);
         
         // Assert
         assertNotNull(task);
@@ -309,7 +309,7 @@ class ServiceTaskTest {
         
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
-                ServiceTask.createServiceTask(longTitle, "Description", "Address", Priority.LOW, 60));
+                ServiceTask.createServiceTask(longTitle, "Description", "Address", Priority.LOW, 60, 1L));
         
         assertEquals("Title must not exceed 200 characters", exception.getMessage());
     }
@@ -321,7 +321,7 @@ class ServiceTaskTest {
         String maxTitle = "a".repeat(200);
         
         // Act
-        ServiceTask task = ServiceTask.createServiceTask(maxTitle, "Description", "Address", Priority.LOW, 60);
+        ServiceTask task = ServiceTask.createServiceTask(maxTitle, "Description", "Address", Priority.LOW, 60, 1L);
         
         // Assert
         assertNotNull(task);
@@ -365,7 +365,7 @@ class ServiceTaskTest {
     void shouldUseLombokGeneratedToString() {
         // Arrange
         ServiceTask task = ServiceTask.createServiceTask(
-                "Task", "Description", "Address", Priority.HIGH, 120);
+                "Task", "Description", "Address", Priority.HIGH, 120, 1L);
         
         // Act
         String toString = task.toString();
@@ -374,5 +374,33 @@ class ServiceTaskTest {
         assertNotNull(toString);
         assertTrue(toString.contains("ServiceTask"));
         assertTrue(toString.contains("Task"));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when createdBy is null")
+    void shouldThrowExceptionWhenCreatedByIsNull() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ServiceTask.createServiceTask(
+                        "Task", "Description", "Address", Priority.HIGH, 120, null)
+        );
+        
+        assertEquals("CreatedBy user ID is required", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should create ServiceTask with valid createdBy")
+    void shouldCreateServiceTaskWithValidCreatedBy() {
+        // Arrange
+        Long createdBy = 42L;
+        
+        // Act
+        ServiceTask task = ServiceTask.createServiceTask(
+                "Task", "Description", "Address", Priority.HIGH, 120, createdBy);
+        
+        // Assert
+        assertNotNull(task);
+        assertEquals(createdBy, task.getCreatedBy());
     }
 }

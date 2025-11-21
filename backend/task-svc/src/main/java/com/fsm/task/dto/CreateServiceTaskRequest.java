@@ -57,4 +57,9 @@ public class CreateServiceTaskRequest {
     @Schema(description = "Estimated duration in minutes", 
             example = "120", required = true, minimum = "1")
     private Integer estimatedDuration;
+    
+    @NotNull(message = "Created by user ID is required")
+    @Schema(description = "ID of the user creating the task (must be an authenticated dispatcher)", 
+            example = "1", required = true)
+    private Long createdBy;
 }

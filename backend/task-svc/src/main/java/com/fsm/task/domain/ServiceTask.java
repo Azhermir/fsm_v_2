@@ -93,6 +93,13 @@ public class ServiceTask {
     private Long assignedTo;
     
     /**
+     * ID of the user who created this task
+     * Required by domain invariant - only authenticated dispatchers can create tasks
+     */
+    @Column(nullable = false)
+    private Long createdBy;
+    
+    /**
      * Timestamp when the task was created
      */
     @Column(nullable = false, updatable = false)
@@ -118,9 +125,85 @@ public class ServiceTask {
      * @param longitude the longitude coordinate (optional, geocoded from address)
      * @param priority the task priority (must be valid enum)
      * @param estimatedDuration the estimated duration in minutes (must be positive)
+     * @param createdBy the ID of the user creating the task (must not be null)
      * @return a new ServiceTask instance
      * @throws IllegalArgumentException if domain invariants are violated
      */
+    public static ServiceTask createServiceTask(
+            String title, 
+            String description, 
+            String clientAddress,
+            Double latitude,
+            Double longitude,
+            Priority priority, 
+            Integer estimatedDuration,
+            Long createdBy) {
+        
+        // Validate domain invariants
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("ServiceTask must have a title");
+        }
+        
+        if (title.length() > 200) {
+            throw new IllegalArgumentException("Title must not exceed 200 characters");
+        }
+        
+        if (description == null || description.isBlank()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+        
+        if (description.length() > 2000) {
+            throw new IllegalArgumentException("Description must not exceed 2000 characters");
+        }
+        
+        if (clientAddress == null || clientAddress.isBlank()) {
+            throw new IllegalArgumentException("Client address must not be blank");
+        }
+        
+        if (priority == null) {
+            throw new IllegalArgumentException("Priority must be one of the defined enum values");
+        }
+        
+        if (estimatedDuration == null || estimatedDuration <= 0) {
+            throw new IllegalArgumentException("EstimatedDuration must be positive");
+        }
+        
+        if (createdBy == null) {
+            throw new IllegalArgumentException("CreatedBy user ID is required");
+        }
+        
+        return ServiceTask.builder()
+                .title(title)
+                .description(description)
+                .clientAddress(clientAddress)
+                .latitude(latitude)
+                .longitude(longitude)
+                .priority(priority)
+                .estimatedDuration(estimatedDuration)
+                .status(TaskStatus.UNASSIGNED)
+                .createdBy(createdBy)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+    
+    /**
+     * Overloaded factory method for backward compatibility (without coordinates)
+     */
+    public static ServiceTask createServiceTask(
+            String title, 
+            String description, 
+            String clientAddress, 
+            Priority priority, 
+            Integer estimatedDuration,
+            Long createdBy) {
+        return createServiceTask(title, description, clientAddress, null, null, priority, estimatedDuration, createdBy);
+    }
+    
+    /**
+     * Legacy factory method for backward compatibility (without createdBy)
+     * @deprecated Use the version with createdBy parameter instead
+     */
+    @Deprecated
     public static ServiceTask createServiceTask(
             String title, 
             String description, 
@@ -173,8 +256,10 @@ public class ServiceTask {
     }
     
     /**
-     * Overloaded factory method for backward compatibility (without coordinates)
+     * Legacy overloaded factory method for backward compatibility (without coordinates and createdBy)
+     * @deprecated Use the version with createdBy parameter instead
      */
+    @Deprecated
     public static ServiceTask createServiceTask(
             String title, 
             String description, 

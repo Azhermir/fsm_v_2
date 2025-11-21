@@ -34,7 +34,8 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 "Air conditioning not working properly",
                 "123 Main St, Springfield, IL 62701",
                 Priority.HIGH,
-                120);
+                120,
+                1L);
         task1 = assignId(task1, idGenerator.getAndIncrement());
         task1 = ServiceTask.builder()
                 .id(task1.getId())
@@ -44,6 +45,7 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .priority(task1.getPriority())
                 .estimatedDuration(task1.getEstimatedDuration())
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(task1.getCreatedBy())
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
         
@@ -52,7 +54,8 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 "Routine plumbing inspection for commercial building",
                 "456 Oak Ave, Chicago, IL 60601",
                 Priority.MEDIUM,
-                90);
+                90,
+                1L);
         task2 = assignId(task2, idGenerator.getAndIncrement());
         task2 = ServiceTask.builder()
                 .id(task2.getId())
@@ -62,6 +65,7 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .priority(task2.getPriority())
                 .estimatedDuration(task2.getEstimatedDuration())
                 .status(TaskStatus.ASSIGNED)
+                .createdBy(task2.getCreatedBy())
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
@@ -70,7 +74,8 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 "Power outage in office building",
                 "789 Elm St, Boston, MA 02101",
                 Priority.CRITICAL,
-                180);
+                180,
+                2L);
         task3 = assignId(task3, idGenerator.getAndIncrement());
         task3 = ServiceTask.builder()
                 .id(task3.getId())
@@ -80,6 +85,7 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .priority(task3.getPriority())
                 .estimatedDuration(task3.getEstimatedDuration())
                 .status(TaskStatus.IN_PROGRESS)
+                .createdBy(task3.getCreatedBy())
                 .createdAt(LocalDateTime.now().minusHours(6))
                 .build();
         
@@ -190,6 +196,36 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .sorted(Comparator
                         .comparing(ServiceTask::getPriority, Comparator.reverseOrder())
                         .thenComparing(ServiceTask::getCreatedAt))
+                .toList();
+    }
+    
+    @Override
+    public List<ServiceTask> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> !task.getCreatedAt().isBefore(startDate) && !task.getCreatedAt().isAfter(endDate))
+                .toList();
+    }
+    
+    @Override
+    public List<ServiceTask> findByStatusAndCreatedAtBetween(TaskStatus status, LocalDateTime startDate, LocalDateTime endDate) {
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> task.getStatus() == status)
+                .filter(task -> !task.getCreatedAt().isBefore(startDate) && !task.getCreatedAt().isAfter(endDate))
                 .toList();
     }
     
