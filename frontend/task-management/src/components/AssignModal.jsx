@@ -98,6 +98,16 @@ const AssignModal = ({ task, onAssign, onClose }) => {
     return `${km.toFixed(1)}km`
   }
 
+  const selectedTech = selectedTechnicianId
+    ? technicians.find(t => t.id === parseInt(selectedTechnicianId, 10))
+    : null
+
+  const isSubmitDisabled = 
+    isLoading || 
+    !selectedTechnicianId || 
+    isFetchingTechnicians || 
+    technicians.length === 0
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -155,46 +165,35 @@ const AssignModal = ({ task, onAssign, onClose }) => {
               )}
             </div>
 
-            {selectedTechnicianId && (
+            {selectedTech && (
               <div className="technician-details">
-                {(() => {
-                  const selectedTech = technicians.find(
-                    t => t.id === parseInt(selectedTechnicianId, 10)
-                  )
-                  if (!selectedTech) return null
-                  
-                  return (
-                    <>
-                      <h4>Technician Details</h4>
-                      <div className="detail-row">
-                        <span className="detail-label">Name:</span>
-                        <span className="detail-value">{selectedTech.name}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Distance:</span>
-                        <span className="detail-value">{formatDistance(selectedTech.distanceToTask)}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Status:</span>
-                        <span className={`detail-value status-badge status-${selectedTech.status.toLowerCase()}`}>
-                          {selectedTech.status}
-                        </span>
-                      </div>
-                      {selectedTech.skillLevel && (
-                        <div className="detail-row">
-                          <span className="detail-label">Skill Level:</span>
-                          <span className="detail-value">{selectedTech.skillLevel}</span>
-                        </div>
-                      )}
-                      {selectedTech.phone && (
-                        <div className="detail-row">
-                          <span className="detail-label">Phone:</span>
-                          <span className="detail-value">{selectedTech.phone}</span>
-                        </div>
-                      )}
-                    </>
-                  )
-                })()}
+                <h4>Technician Details</h4>
+                <div className="detail-row">
+                  <span className="detail-label">Name:</span>
+                  <span className="detail-value">{selectedTech.name}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Distance:</span>
+                  <span className="detail-value">{formatDistance(selectedTech.distanceToTask)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className={`detail-value status-badge status-${selectedTech.status.toLowerCase()}`}>
+                    {selectedTech.status}
+                  </span>
+                </div>
+                {selectedTech.skillLevel && (
+                  <div className="detail-row">
+                    <span className="detail-label">Skill Level:</span>
+                    <span className="detail-value">{selectedTech.skillLevel}</span>
+                  </div>
+                )}
+                {selectedTech.phone && (
+                  <div className="detail-row">
+                    <span className="detail-label">Phone:</span>
+                    <span className="detail-value">{selectedTech.phone}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -210,7 +209,7 @@ const AssignModal = ({ task, onAssign, onClose }) => {
               <button
                 type="submit"
                 className="submit-button"
-                disabled={isLoading || !selectedTechnicianId || isFetchingTechnicians || technicians.length === 0}
+                disabled={isSubmitDisabled}
               >
                 {isLoading ? 'Assigning...' : 'Assign'}
               </button>
