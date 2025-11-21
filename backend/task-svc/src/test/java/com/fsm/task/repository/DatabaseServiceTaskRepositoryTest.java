@@ -48,7 +48,8 @@ class DatabaseServiceTaskRepositoryTest {
                 "Air conditioning not working",
                 "123 Main St, Springfield",
                 Priority.HIGH,
-                120
+                120,
+                1L
         );
         
         // Act
@@ -75,7 +76,8 @@ class DatabaseServiceTaskRepositoryTest {
                 "Description",
                 "Address",
                 Priority.LOW,
-                60
+                60,
+                1L
         );
         
         // Act
@@ -96,7 +98,8 @@ class DatabaseServiceTaskRepositoryTest {
                 "Original Description",
                 "Original Address",
                 Priority.LOW,
-                60
+                60,
+                1L
         );
         ServiceTask saved = repository.save(original);
         entityManager.flush();
@@ -111,6 +114,7 @@ class DatabaseServiceTaskRepositoryTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .createdBy(saved.getCreatedBy())
                 .createdAt(saved.getCreatedAt())
                 .build();
         
@@ -136,7 +140,8 @@ class DatabaseServiceTaskRepositoryTest {
                 "Test finding task by ID",
                 "Test Address",
                 Priority.MEDIUM,
-                90
+                90,
+                1L
         );
         ServiceTask saved = repository.save(task);
         entityManager.flush();
@@ -176,11 +181,11 @@ class DatabaseServiceTaskRepositoryTest {
     void shouldFindAllServiceTasks() {
         // Arrange - Create multiple tasks
         ServiceTask task1 = ServiceTask.createServiceTask(
-                "Task 1", "Description 1", "Address 1", Priority.LOW, 60);
+                "Task 1", "Description 1", "Address 1", Priority.LOW, 60, 1L);
         ServiceTask task2 = ServiceTask.createServiceTask(
-                "Task 2", "Description 2", "Address 2", Priority.MEDIUM, 90);
+                "Task 2", "Description 2", "Address 2", Priority.MEDIUM, 90, 1L);
         ServiceTask task3 = ServiceTask.createServiceTask(
-                "Task 3", "Description 3", "Address 3", Priority.HIGH, 120);
+                "Task 3", "Description 3", "Address 3", Priority.HIGH, 120, 1L);
         
         repository.save(task1);
         repository.save(task2);
@@ -210,7 +215,7 @@ class DatabaseServiceTaskRepositoryTest {
     void shouldDeleteServiceTaskById() {
         // Arrange
         ServiceTask task = ServiceTask.createServiceTask(
-                "Delete Me", "Test deletion", "Address", Priority.LOW, 60);
+                "Delete Me", "Test deletion", "Address", Priority.LOW, 60, 1L);
         ServiceTask saved = repository.save(task);
         entityManager.flush();
         Long taskId = saved.getId();
@@ -261,7 +266,7 @@ class DatabaseServiceTaskRepositoryTest {
         // Arrange
         LocalDateTime beforeSave = LocalDateTime.now().minusSeconds(1);
         ServiceTask task = ServiceTask.createServiceTask(
-                "Test Task", "Description", "Address", Priority.LOW, 60);
+                "Test Task", "Description", "Address", Priority.LOW, 60, 1L);
         
         // Act
         ServiceTask saved = repository.save(task);
@@ -283,7 +288,7 @@ class DatabaseServiceTaskRepositoryTest {
     void shouldMaintainCreatedAtAsImmutableOnUpdate() {
         // Arrange
         ServiceTask task = ServiceTask.createServiceTask(
-                "Original", "Description", "Address", Priority.LOW, 60);
+                "Original", "Description", "Address", Priority.LOW, 60, 1L);
         ServiceTask saved = repository.save(task);
         entityManager.flush();
         entityManager.clear();
@@ -322,7 +327,7 @@ class DatabaseServiceTaskRepositoryTest {
         for (Priority priority : Priority.values()) {
             // Arrange
             ServiceTask task = ServiceTask.createServiceTask(
-                    "Task " + priority, "Description", "Address", priority, 60);
+                    "Task " + priority, "Description", "Address", priority, 60, 1L);
             
             // Act
             ServiceTask saved = repository.save(task);
@@ -369,7 +374,7 @@ class DatabaseServiceTaskRepositoryTest {
     void shouldHandleTasksWithValidDescription() {
         // Arrange
         ServiceTask task = ServiceTask.createServiceTask(
-                "Task", "Valid description", "Address", Priority.LOW, 60);
+                "Task", "Valid description", "Address", Priority.LOW, 60, 1L);
         
         // Act
         ServiceTask saved = repository.save(task);
@@ -387,7 +392,7 @@ class DatabaseServiceTaskRepositoryTest {
     void shouldRejectTasksWithNullDescription() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-                ServiceTask.createServiceTask("Task", null, "Address", Priority.LOW, 60));
+                ServiceTask.createServiceTask("Task", null, "Address", Priority.LOW, 60, 1L));
     }
     
     @Test
@@ -396,7 +401,7 @@ class DatabaseServiceTaskRepositoryTest {
         // Arrange - Create description near the 1000 character limit
         String longDescription = "A".repeat(950);
         ServiceTask task = ServiceTask.createServiceTask(
-                "Task", longDescription, "Address", Priority.LOW, 60);
+                "Task", longDescription, "Address", Priority.LOW, 60, 1L);
         
         // Act
         ServiceTask saved = repository.save(task);

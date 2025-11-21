@@ -51,6 +51,7 @@ class DashboardControllerTest {
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
                 .assignedTo(1L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
@@ -63,6 +64,7 @@ class DashboardControllerTest {
                 .estimatedDuration(90)
                 .status(TaskStatus.IN_PROGRESS)
                 .assignedTo(2L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
         
@@ -75,6 +77,7 @@ class DashboardControllerTest {
                 .estimatedDuration(180)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(1L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusHours(6))
                 .build();
         
@@ -86,6 +89,7 @@ class DashboardControllerTest {
                 .priority(Priority.LOW)
                 .estimatedDuration(60)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -98,6 +102,7 @@ class DashboardControllerTest {
                 .estimatedDuration(150)
                 .status(TaskStatus.COMPLETED)
                 .assignedTo(2L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(3))
                 .build();
         

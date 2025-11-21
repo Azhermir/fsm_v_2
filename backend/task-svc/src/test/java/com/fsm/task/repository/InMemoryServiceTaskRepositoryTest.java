@@ -104,6 +104,7 @@ class InMemoryServiceTaskRepositoryTest {
                 .priority(Priority.CRITICAL)
                 .estimatedDuration(180)
                 .status(TaskStatus.COMPLETED)
+                .createdBy(1L)
                 .createdAt(saved.getCreatedAt())
                 .build();
         ServiceTask result = repository.save(updated);
@@ -279,6 +280,7 @@ class InMemoryServiceTaskRepositoryTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.ASSIGNED)
+                .createdBy(1L)
                 .createdAt(createdTime)
                 .build();
         
@@ -407,6 +409,7 @@ class InMemoryServiceTaskRepositoryTest {
                     .priority(Priority.LOW)
                     .estimatedDuration(60)
                     .status(status)
+                    .createdBy(1L)
                     .createdAt(LocalDateTime.now())
                     .build();
             ServiceTask saved = repository.save(task);

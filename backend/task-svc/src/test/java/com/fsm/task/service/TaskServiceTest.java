@@ -61,6 +61,7 @@ class TaskServiceTest {
                 .clientAddress("123 Main St, Springfield")
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
+                .createdBy(1L)
                 .build();
         
         mockSavedTask = ServiceTask.builder()
@@ -71,6 +72,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
@@ -189,6 +191,7 @@ class TaskServiceTest {
                     .priority(priority)
                     .estimatedDuration(60)
                     .status(TaskStatus.UNASSIGNED)
+                    .createdBy(1L)
                     .createdAt(LocalDateTime.now())
                     .build();
             when(taskRepository.save(any(ServiceTask.class))).thenReturn(taskWithPriority);
@@ -297,6 +300,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
         
@@ -308,6 +312,7 @@ class TaskServiceTest {
                 .priority(Priority.MEDIUM)
                 .estimatedDuration(90)
                 .status(TaskStatus.ASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
@@ -351,6 +356,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
@@ -362,6 +368,7 @@ class TaskServiceTest {
                 .priority(Priority.MEDIUM)
                 .estimatedDuration(90)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -410,6 +417,7 @@ class TaskServiceTest {
                     .priority(Priority.MEDIUM)
                     .estimatedDuration(60)
                     .status(status)
+                    .createdBy(1L)
                     .createdAt(LocalDateTime.now())
                     .build();
             
@@ -438,6 +446,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -449,6 +458,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -484,6 +494,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -495,6 +506,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -532,6 +544,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -542,6 +555,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -570,6 +584,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -627,6 +642,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -683,6 +699,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -735,6 +752,7 @@ class TaskServiceTest {
                 .estimatedDuration(120)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(oldTechnicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -806,6 +824,7 @@ class TaskServiceTest {
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
                 .assignedTo(10L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -840,6 +859,7 @@ class TaskServiceTest {
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
                 .assignedTo(10L)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -885,6 +905,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(oldTechnicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -944,6 +965,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(oldTechnicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -1013,6 +1035,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.UNASSIGNED)
                 .assignedTo(null) // Not assigned
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -1050,6 +1073,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId) // Same technician
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -1082,6 +1106,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build();
         
@@ -1094,6 +1119,7 @@ class TaskServiceTest {
                 .estimatedDuration(90)
                 .status(TaskStatus.IN_PROGRESS)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now().minusDays(1))
                 .build();
         
@@ -1131,6 +1157,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
         
@@ -1188,6 +1215,7 @@ class TaskServiceTest {
                 .estimatedDuration(60)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(now.minusDays(3))
                 .build();
         
@@ -1200,6 +1228,7 @@ class TaskServiceTest {
                 .estimatedDuration(90)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(now.minusDays(1))
                 .build();
         
@@ -1212,6 +1241,7 @@ class TaskServiceTest {
                 .estimatedDuration(120)
                 .status(TaskStatus.ASSIGNED)
                 .assignedTo(technicianId)
+                .createdBy(1L)
                 .createdAt(now.minusDays(2))
                 .build();
         

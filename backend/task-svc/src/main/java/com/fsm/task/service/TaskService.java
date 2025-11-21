@@ -60,7 +60,8 @@ public class TaskService {
                 request.getLatitude(),
                 request.getLongitude(),
                 request.getPriority(),
-                request.getEstimatedDuration()
+                request.getEstimatedDuration(),
+                request.getCreatedBy()
         );
         
         // Save to repository
@@ -321,6 +322,7 @@ public class TaskService {
                 .estimatedDuration(task.getEstimatedDuration())
                 .status(task.getStatus())
                 .assignedTo(task.getAssignedTo())
+                .createdBy(task.getCreatedBy())
                 .createdAt(task.getCreatedAt())
                 .build();
     }
