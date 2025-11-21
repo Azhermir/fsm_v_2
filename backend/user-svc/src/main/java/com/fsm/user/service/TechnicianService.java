@@ -22,10 +22,11 @@ public class TechnicianService {
     private final TechnicianRepository technicianRepository;
     
     /**
-     * Get all technicians
+     * Get all active technicians (AVAILABLE or BUSY, not OFFLINE)
      * Returns hardcoded static data for now
+     * Domain Invariant: Only active technicians should be returned
      * 
-     * @return list of all technicians
+     * @return list of all active technicians
      */
     public List<Technician> getAllTechnicians() {
         // Return hardcoded static technician data
@@ -68,7 +69,10 @@ public class TechnicianService {
                         .build())
                 .build();
         
-        return List.of(tech1, tech2, tech3);
+        // Filter to only return active technicians (not OFFLINE)
+        return List.of(tech1, tech2, tech3).stream()
+                .filter(tech -> tech.getStatus() != TechnicianStatus.OFFLINE)
+                .toList();
     }
     
     /**
@@ -97,5 +101,24 @@ public class TechnicianService {
         return getAllTechnicians().stream()
                 .filter(tech -> tech.getEmail().equals(email))
                 .findFirst();
+    }
+    
+    /**
+     * Update technician location
+     * Updates the location with current timestamp
+     * Domain Invariant: Location updates should include timestamp
+     * 
+     * @param id the technician ID
+     * @param latitude the new latitude
+     * @param longitude the new longitude
+     * @return Optional containing the updated technician if found
+     */
+    public Optional<Technician> updateTechnicianLocation(Long id, Double latitude, Double longitude) {
+        return getTechnicianById(id).map(technician -> {
+            // Create new location with current timestamp
+            Location newLocation = Location.createLocation(latitude, longitude, LocalDateTime.now());
+            technician.setCurrentLocation(newLocation);
+            return technician;
+        });
     }
 }

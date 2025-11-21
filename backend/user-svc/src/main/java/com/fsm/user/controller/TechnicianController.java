@@ -1,10 +1,12 @@
 package com.fsm.user.controller;
 
 import com.fsm.user.domain.Technician;
+import com.fsm.user.dto.LocationUpdateRequest;
 import com.fsm.user.dto.TechnicianResponse;
 import com.fsm.user.service.TechnicianService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +50,24 @@ public class TechnicianController {
     @Operation(summary = "Get technician by ID", description = "Retrieve a specific technician by their ID")
     public ResponseEntity<TechnicianResponse> getTechnicianById(@PathVariable Long id) {
         return technicianService.getTechnicianById(id)
+                .map(this::toResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    /**
+     * Update technician location
+     * 
+     * @param id the technician ID
+     * @param request the location update request
+     * @return the updated technician if found
+     */
+    @PutMapping("/{id}/location")
+    @Operation(summary = "Update technician location", description = "Update a technician's current location with coordinates and timestamp")
+    public ResponseEntity<TechnicianResponse> updateTechnicianLocation(
+            @PathVariable Long id,
+            @Valid @RequestBody LocationUpdateRequest request) {
+        return technicianService.updateTechnicianLocation(id, request.getLatitude(), request.getLongitude())
                 .map(this::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
