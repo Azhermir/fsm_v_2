@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CreateTaskForm from './components/CreateTaskForm'
 import TaskList from './components/TaskList'
+import TechnicianMap from './components/TechnicianMap'
 import './App.css'
 
 function App() {
@@ -21,9 +22,17 @@ function App() {
         >
           Create Task
         </button>
+        <button
+          className={`nav-tab ${activeView === 'map' ? 'active' : ''}`}
+          onClick={() => setActiveView('map')}
+        >
+          Technician Map
+        </button>
       </nav>
       <div className="content">
-        {activeView === 'list' ? <TaskList /> : <CreateTaskForm />}
+        {activeView === 'list' && <TaskList />}
+        {activeView === 'create' && <CreateTaskForm />}
+        {activeView === 'map' && <TechnicianMap />}
       </div>
     </div>
   )
