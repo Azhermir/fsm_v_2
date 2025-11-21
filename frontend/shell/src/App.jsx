@@ -14,11 +14,15 @@ function App() {
           src={TASK_MANAGEMENT_URL}
           title="Task Management"
           className="micro-frontend"
+          loading="lazy"
+          sandbox="allow-same-origin allow-scripts allow-forms"
         />
         <iframe
           src={ANALYTICS_URL}
           title="Analytics Dashboard"
           className="micro-frontend"
+          loading="lazy"
+          sandbox="allow-same-origin allow-scripts allow-forms"
         />
       </main>
     </div>

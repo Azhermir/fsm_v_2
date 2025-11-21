@@ -5,6 +5,7 @@ import './Dashboard.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 const REFRESH_INTERVAL = 30000 // 30 seconds
+const ALL_TIME_FILTER = ''
 
 const Dashboard = ({ disableAutoRefresh = false }) => {
   const [metrics, setMetrics] = useState(null)
@@ -21,7 +22,7 @@ const Dashboard = ({ disableAutoRefresh = false }) => {
 
       // Build query params
       const params = new URLSearchParams()
-      if (dateRange && dateRange !== 'all') {
+      if (dateRange && dateRange !== ALL_TIME_FILTER) {
         params.append('range', dateRange)
       }
       if (dateRange === 'custom') {
@@ -155,7 +156,13 @@ const Dashboard = ({ disableAutoRefresh = false }) => {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-            <button onClick={fetchMetrics} aria-label="Apply custom date range">Apply</button>
+            <button 
+              onClick={fetchMetrics} 
+              aria-label="Apply custom date range"
+              disabled={!startDate || !endDate}
+            >
+              Apply
+            </button>
           </div>
         )}
       </div>
@@ -178,7 +185,7 @@ const Dashboard = ({ disableAutoRefresh = false }) => {
             <div className="kpi-card">
               <h3>Avg Completion Time</h3>
               <p className="kpi-value">
-                {metrics.averageCompletionTimeMinutes 
+                {metrics.averageCompletionTimeMinutes !== null && metrics.averageCompletionTimeMinutes !== undefined
                   ? `${metrics.averageCompletionTimeMinutes.toFixed(1)} min` 
                   : 'N/A'}
               </p>

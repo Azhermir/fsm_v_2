@@ -4,6 +4,7 @@ import './PieChart.css'
 
 const PieChart = ({ data }) => {
   const canvasRef = useRef(null)
+  const MIN_SLICE_ANGLE = 0.1 // Minimum angle to display label on slice
 
   useEffect(() => {
     if (!canvasRef.current || !data || data.length === 0) return
@@ -50,7 +51,7 @@ const PieChart = ({ data }) => {
       ctx.stroke()
 
       // Draw label if slice is large enough
-      if (sliceAngle > 0.1) {
+      if (sliceAngle > MIN_SLICE_ANGLE) {
         const labelAngle = currentAngle + sliceAngle / 2
         const labelX = centerX + (radius * 0.7) * Math.cos(labelAngle)
         const labelY = centerY + (radius * 0.7) * Math.sin(labelAngle)
