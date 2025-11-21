@@ -1,21 +1,58 @@
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import PropTypes from 'prop-types'
 import TechnicianMap from './TechnicianMap'
 
-// Mock react-leaflet components
-vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children, ...props }) => (
-    <div data-testid="map-container" {...props}>{children}</div>
-  ),
-  TileLayer: () => <div data-testid="tile-layer" />,
-  Marker: ({ children, position }) => (
-    <div data-testid="marker" data-position={JSON.stringify(position)}>
-      {children}
+// Mock AssignModal component
+vi.mock('./AssignModal', () => ({
+  default: ({ task, onAssign, onClose }) => (
+    <div data-testid="assign-modal">
+      <h3>Assign Task</h3>
+      <p>{task.title}</p>
+      <select data-testid="technician-select">
+        <option value="">Select</option>
+        <option value="1">John Doe</option>
+      </select>
+      <button onClick={() => onAssign(1)}>Assign</button>
+      <button onClick={onClose}>Cancel</button>
     </div>
   ),
-  Popup: ({ children }) => <div data-testid="popup">{children}</div>,
 }))
+
+// Mock react-leaflet components
+vi.mock('react-leaflet', () => {
+  const MockMapContainer = ({ children }) => (
+    <div data-testid="map-container">{children}</div>
+  )
+  MockMapContainer.displayName = 'MapContainer'
+  MockMapContainer.propTypes = {
+    children: PropTypes.node
+  }
+  
+  const MockMarker = ({ children }) => (
+    <div data-testid="marker">
+      {children}
+    </div>
+  )
+  MockMarker.displayName = 'Marker'
+  MockMarker.propTypes = {
+    children: PropTypes.node
+  }
+  
+  const MockPopup = ({ children }) => <div data-testid="popup">{children}</div>
+  MockPopup.displayName = 'Popup'
+  MockPopup.propTypes = {
+    children: PropTypes.node
+  }
+  
+  return {
+    MapContainer: MockMapContainer,
+    TileLayer: () => <div data-testid="tile-layer" />,
+    Marker: MockMarker,
+    Popup: MockPopup,
+  }
+})
 
 // Mock leaflet
 vi.mock('leaflet', () => ({
@@ -35,10 +72,6 @@ describe('TechnicianMap', () => {
     vi.clearAllMocks()
     vi.resetAllMocks()
     global.fetch = vi.fn()
-  })
-
-  afterEach(() => {
-    cleanup()
   })
 
   const mockTechnicians = [
@@ -778,6 +811,233 @@ describe('TechnicianMap', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Due:/)).toBeInTheDocument()
+    })
+  })
+
+  // Task Assignment tests
+  it('displays assign button in task popup', async () => {
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/api/technicians')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        })
+      }
+      if (url.includes('/api/tasks')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [mockTasks[0]],
+        })
+      }
+    })
+
+    render(<TechnicianMap />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Assign Task')).toBeInTheDocument()
+    })
+  })
+
+  it('opens AssignModal when assign button is clicked', async () => {
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/api/technicians')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [],
+        })
+      }
+      if (url.includes('/api/tasks')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [mockTasks[0]],
+        })
+      }
+    })
+
+    const user = userEvent.setup()
+    render(<TechnicianMap />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Assign Task')).toBeInTheDocument()
+    })
+
+    const assignButton = screen.getByText('Assign Task')
+    await user.click(assignButton)
+
+    await waitFor(() => {
+      // Modal should be rendered - look for modal title
+      const modalTitles = screen.getAllByText('Assign Task')
+      expect(modalTitles.length).toBeGreaterThan(1) // Button + modal title
+    })
+  })
+
+  it('calls assignment API when task is assigned', async () => {
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/api/technicians')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockTechnicians,
+        })
+      }
+      if (url.includes('/api/tasks')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [mockTasks[0]],
+        })
+      }
+      if (url.includes('/assign')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        })
+      }
+    })
+
+    const user = userEvent.setup()
+    render(<TechnicianMap />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Assign Task')).toBeInTheDocument()
+    })
+
+    // Click assign button in popup
+    const assignButton = screen.getByText('Assign Task')
+    await user.click(assignButton)
+
+    // Wait for modal to appear and select a technician
+    await waitFor(() => {
+      const modalTitles = screen.getAllByText('Assign Task')
+      expect(modalTitles.length).toBeGreaterThan(1)
+    })
+
+    // Select technician in modal
+    const select = screen.getByRole('combobox')
+    await user.selectOptions(select, '1')
+
+    // Click Assign in modal
+    const modalAssignButton = screen.getByRole('button', { name: /^Assign$/i })
+    await user.click(modalAssignButton)
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:8080/api/tasks/1/assign',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ technicianId: 1 }),
+        })
+      )
+    })
+  })
+
+  it('refreshes tasks after successful assignment', async () => {
+    let fetchCallCount = 0
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/api/technicians')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockTechnicians,
+        })
+      }
+      if (url.includes('/api/tasks')) {
+        fetchCallCount++
+        return Promise.resolve({
+          ok: true,
+          json: async () => fetchCallCount === 1 ? [mockTasks[0]] : [],
+        })
+      }
+      if (url.includes('/assign')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        })
+      }
+    })
+
+    const user = userEvent.setup()
+    render(<TechnicianMap />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Assign Task')).toBeInTheDocument()
+    })
+
+    // Initial fetch should have been called
+    expect(fetchCallCount).toBe(1)
+
+    // Click assign button
+    const assignButton = screen.getByText('Assign Task')
+    await user.click(assignButton)
+
+    // Select technician and submit
+    await waitFor(() => {
+      const select = screen.getByRole('combobox')
+      expect(select).toBeInTheDocument()
+    })
+
+    const select = screen.getByRole('combobox')
+    await user.selectOptions(select, '1')
+
+    const modalAssignButton = screen.getByRole('button', { name: /^Assign$/i })
+    await user.click(modalAssignButton)
+
+    // Wait for refresh after assignment
+    await waitFor(() => {
+      expect(fetchCallCount).toBeGreaterThan(1)
+    })
+  })
+
+  it('closes AssignModal after successful assignment', async () => {
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/api/technicians')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockTechnicians,
+        })
+      }
+      if (url.includes('/api/tasks')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [mockTasks[0]],
+        })
+      }
+      if (url.includes('/assign')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        })
+      }
+    })
+
+    const user = userEvent.setup()
+    render(<TechnicianMap />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Assign Task')).toBeInTheDocument()
+    })
+
+    // Open modal
+    const assignButton = screen.getByText('Assign Task')
+    await user.click(assignButton)
+
+    await waitFor(() => {
+      const modalTitles = screen.getAllByText('Assign Task')
+      expect(modalTitles.length).toBeGreaterThan(1)
+    })
+
+    // Select and assign
+    const select = screen.getByRole('combobox')
+    await user.selectOptions(select, '1')
+
+    const modalAssignButton = screen.getByRole('button', { name: /^Assign$/i })
+    await user.click(modalAssignButton)
+
+    // Modal should close
+    await waitFor(() => {
+      const modalTitles = screen.queryAllByText('Assign Task')
+      // Should only have the button text, not modal title
+      expect(modalTitles.length).toBeLessThanOrEqual(1)
     })
   })
 })

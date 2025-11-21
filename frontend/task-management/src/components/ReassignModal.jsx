@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import './ReassignModal.css'
 
@@ -20,11 +20,7 @@ const ReassignModal = ({ task, onReassign, onClose }) => {
   const [error, setError] = useState('')
   const [isFetchingTechnicians, setIsFetchingTechnicians] = useState(false)
 
-  useEffect(() => {
-    fetchTechnicians()
-  }, [])
-
-  const fetchTechnicians = async () => {
+  const fetchTechnicians = useCallback(async () => {
     setIsFetchingTechnicians(true)
     setError('')
 
@@ -46,7 +42,11 @@ const ReassignModal = ({ task, onReassign, onClose }) => {
     } finally {
       setIsFetchingTechnicians(false)
     }
-  }
+  }, [task.assignedTechnicianId])
+
+  useEffect(() => {
+    fetchTechnicians()
+  }, [fetchTechnicians])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
