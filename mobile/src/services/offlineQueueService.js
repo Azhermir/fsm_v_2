@@ -1,7 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const QUEUE_KEY = '@offline_queue';
-let idCounter = 0;
+
+/**
+ * Generate a unique ID for queue items
+ * @returns {string} Unique ID
+ */
+const generateUniqueId = () => {
+  // Use a combination of timestamp and random value for uniqueness
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+};
 
 /**
  * Offline Queue Service
@@ -19,7 +27,7 @@ export const addToQueue = async (taskId, status, workSummary = null) => {
   try {
     const queue = await getQueue();
     const queueItem = {
-      id: `${Date.now()}-${idCounter++}`,
+      id: generateUniqueId(),
       taskId,
       status,
       workSummary,

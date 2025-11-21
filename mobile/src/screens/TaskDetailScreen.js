@@ -111,6 +111,21 @@ const TaskDetailScreen = ({ route, navigation }) => {
       });
   };
 
+  /**
+   * Helper function to update task state optimistically
+   * @param {string} newStatus - The new status
+   * @returns {object} Updated task object
+   */
+  const updateTaskStateOptimistically = (newStatus) => {
+    return {
+      ...task,
+      status: newStatus,
+      // Add timestamp based on status
+      ...(newStatus === 'IN_PROGRESS' && { startedAt: new Date().toISOString() }),
+      ...(newStatus === 'COMPLETED' && { completedAt: new Date().toISOString() }),
+    };
+  };
+
   const handleStartTask = async () => {
     Alert.alert(
       'Start Task',
@@ -134,10 +149,9 @@ const TaskDetailScreen = ({ route, navigation }) => {
                 setTask(updatedTask);
                 Alert.alert('Success', 'Task started successfully');
               } else {
-                // Offline: Add to queue
+                // Offline: Add to queue and update optimistically
                 await addToQueue(task.id, 'IN_PROGRESS');
-                const updatedTask = { ...task, status: 'IN_PROGRESS' };
-                setTask(updatedTask);
+                setTask(updateTaskStateOptimistically('IN_PROGRESS'));
                 Alert.alert(
                   'Queued',
                   'You are offline. The status update will be sent when you are back online.'
@@ -173,10 +187,9 @@ const TaskDetailScreen = ({ route, navigation }) => {
           },
         ]);
       } else {
-        // Offline: Add to queue
+        // Offline: Add to queue and update optimistically
         await addToQueue(task.id, 'COMPLETED', workSummary);
-        const updatedTask = { ...task, status: 'COMPLETED' };
-        setTask(updatedTask);
+        setTask(updateTaskStateOptimistically('COMPLETED'));
         setShowCompletionModal(false);
         Alert.alert(
           'Queued',
