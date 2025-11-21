@@ -35,7 +35,8 @@ class TechnicianServiceTest {
         
         // Assert
         assertNotNull(technicians);
-        assertEquals(3, technicians.size());
+        // Only active technicians should be returned (not OFFLINE)
+        assertEquals(2, technicians.size());
         
         // Verify first technician
         Technician tech1 = technicians.get(0);
@@ -55,14 +56,8 @@ class TechnicianServiceTest {
         assertEquals(TechnicianStatus.BUSY, tech2.getStatus());
         assertNotNull(tech2.getCurrentLocation());
         
-        // Verify third technician
-        Technician tech3 = technicians.get(2);
-        assertEquals(3L, tech3.getId());
-        assertEquals("Bob Wilson", tech3.getName());
-        assertEquals("bob.wilson@example.com", tech3.getEmail());
-        assertEquals("555-0789", tech3.getPhone());
-        assertEquals(TechnicianStatus.OFFLINE, tech3.getStatus());
-        assertNotNull(tech3.getCurrentLocation());
+        // Verify no OFFLINE technicians are returned
+        assertTrue(technicians.stream().noneMatch(tech -> tech.getStatus() == TechnicianStatus.OFFLINE));
     }
     
     @Test
@@ -132,5 +127,74 @@ class TechnicianServiceTest {
             assertTrue(technician.getCurrentLocation().getLongitude() >= -180);
             assertTrue(technician.getCurrentLocation().getLongitude() <= 180);
         }
+    }
+    
+    @Test
+    @DisplayName("Should update technician location when technician exists")
+    void shouldUpdateTechnicianLocationWhenTechnicianExists() {
+        // Arrange
+        Double newLatitude = 34.0522;
+        Double newLongitude = -118.2437;
+        
+        // Act
+        Optional<Technician> result = technicianService.updateTechnicianLocation(1L, newLatitude, newLongitude);
+        
+        // Assert
+        assertTrue(result.isPresent());
+        Technician technician = result.get();
+        assertEquals(1L, technician.getId());
+        assertNotNull(technician.getCurrentLocation());
+        assertEquals(newLatitude, technician.getCurrentLocation().getLatitude());
+        assertEquals(newLongitude, technician.getCurrentLocation().getLongitude());
+        assertNotNull(technician.getCurrentLocation().getTimestamp());
+    }
+    
+    @Test
+    @DisplayName("Should return empty when updating location for non-existent technician")
+    void shouldReturnEmptyWhenUpdatingLocationForNonExistentTechnician() {
+        // Arrange
+        Double newLatitude = 34.0522;
+        Double newLongitude = -118.2437;
+        
+        // Act
+        Optional<Technician> result = technicianService.updateTechnicianLocation(999L, newLatitude, newLongitude);
+        
+        // Assert
+        assertFalse(result.isPresent());
+    }
+    
+    @Test
+    @DisplayName("Should include timestamp when updating technician location")
+    void shouldIncludeTimestampWhenUpdatingTechnicianLocation() {
+        // Arrange
+        Double newLatitude = 37.7749;
+        Double newLongitude = -122.4194;
+        
+        // Act
+        Optional<Technician> result = technicianService.updateTechnicianLocation(2L, newLatitude, newLongitude);
+        
+        // Assert
+        assertTrue(result.isPresent());
+        Technician technician = result.get();
+        assertNotNull(technician.getCurrentLocation());
+        assertNotNull(technician.getCurrentLocation().getTimestamp());
+        // Timestamp should be recent (within last minute)
+        assertTrue(technician.getCurrentLocation().getTimestamp().isAfter(
+                java.time.LocalDateTime.now().minusMinutes(1)));
+    }
+    
+    @Test
+    @DisplayName("Should validate coordinates when updating location")
+    void shouldValidateCoordinatesWhenUpdatingLocation() {
+        // Test valid coordinates
+        Optional<Technician> result1 = technicianService.updateTechnicianLocation(1L, 40.7128, -74.0060);
+        assertTrue(result1.isPresent());
+        
+        // Test boundary coordinates
+        Optional<Technician> result2 = technicianService.updateTechnicianLocation(1L, -90.0, -180.0);
+        assertTrue(result2.isPresent());
+        
+        Optional<Technician> result3 = technicianService.updateTechnicianLocation(1L, 90.0, 180.0);
+        assertTrue(result3.isPresent());
     }
 }
