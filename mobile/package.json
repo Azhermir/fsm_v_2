@@ -6,7 +6,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -19,5 +22,36 @@
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.18.0"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "jest": "^30.2.0",
+    "jest-expo": "^54.0.13",
+    "react-test-renderer": "^19.1.0"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+    ],
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^expo/src/winter/(.*)$": "<rootDir>/node_modules/expo/src/winter/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}",
+      "!src/**/*.test.{js,jsx}",
+      "!src/**/__tests__/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 85,
+        "statements": 85,
+        "functions": 85,
+        "branches": 85
+      }
+    }
+  }
 }
