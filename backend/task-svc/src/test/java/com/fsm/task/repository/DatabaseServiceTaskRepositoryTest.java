@@ -304,6 +304,7 @@ class DatabaseServiceTaskRepositoryTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.ASSIGNED)
+                .createdBy(saved.getCreatedBy())
                 .createdAt(originalCreatedAt)
                 .build();
         
@@ -354,6 +355,7 @@ class DatabaseServiceTaskRepositoryTest {
                     .priority(Priority.LOW)
                     .estimatedDuration(60)
                     .status(status)
+                    .createdBy(1L)
                     .createdAt(LocalDateTime.now())
                     .build();
             

@@ -375,4 +375,32 @@ class ServiceTaskTest {
         assertTrue(toString.contains("ServiceTask"));
         assertTrue(toString.contains("Task"));
     }
+    
+    @Test
+    @DisplayName("Should throw exception when createdBy is null")
+    void shouldThrowExceptionWhenCreatedByIsNull() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ServiceTask.createServiceTask(
+                        "Task", "Description", "Address", Priority.HIGH, 120, null)
+        );
+        
+        assertEquals("CreatedBy user ID is required", exception.getMessage());
+    }
+    
+    @Test
+    @DisplayName("Should create ServiceTask with valid createdBy")
+    void shouldCreateServiceTaskWithValidCreatedBy() {
+        // Arrange
+        Long createdBy = 42L;
+        
+        // Act
+        ServiceTask task = ServiceTask.createServiceTask(
+                "Task", "Description", "Address", Priority.HIGH, 120, createdBy);
+        
+        // Assert
+        assertNotNull(task);
+        assertEquals(createdBy, task.getCreatedBy());
+    }
 }

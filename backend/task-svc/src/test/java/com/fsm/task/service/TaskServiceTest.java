@@ -95,6 +95,7 @@ class TaskServiceTest {
         assertEquals(Priority.HIGH, response.getPriority());
         assertEquals(120, response.getEstimatedDuration());
         assertEquals(TaskStatus.UNASSIGNED, response.getStatus());
+        assertEquals(1L, response.getCreatedBy());
         assertNotNull(response.getCreatedAt());
         
         verify(taskRepository, times(1)).save(any(ServiceTask.class));
