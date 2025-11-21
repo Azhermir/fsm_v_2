@@ -193,6 +193,36 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .toList();
     }
     
+    @Override
+    public List<ServiceTask> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> !task.getCreatedAt().isBefore(startDate) && !task.getCreatedAt().isAfter(endDate))
+                .toList();
+    }
+    
+    @Override
+    public List<ServiceTask> findByStatusAndCreatedAtBetween(TaskStatus status, LocalDateTime startDate, LocalDateTime endDate) {
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> task.getStatus() == status)
+                .filter(task -> !task.getCreatedAt().isBefore(startDate) && !task.getCreatedAt().isAfter(endDate))
+                .toList();
+    }
+    
     /**
      * Clear all data from the repository (useful for testing)
      */

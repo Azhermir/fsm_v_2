@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,5 +88,30 @@ public class DatabaseServiceTaskRepository implements IServiceTaskRepository {
             throw new IllegalArgumentException("TaskStatus cannot be null");
         }
         return jpaRepository.findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(technicianId, status);
+    }
+    
+    @Override
+    public List<ServiceTask> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return jpaRepository.findByCreatedAtBetween(startDate, endDate);
+    }
+    
+    @Override
+    public List<ServiceTask> findByStatusAndCreatedAtBetween(TaskStatus status, LocalDateTime startDate, LocalDateTime endDate) {
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        if (startDate == null) {
+            throw new IllegalArgumentException("Start date cannot be null");
+        }
+        if (endDate == null) {
+            throw new IllegalArgumentException("End date cannot be null");
+        }
+        return jpaRepository.findByStatusAndCreatedAtBetween(status, startDate, endDate);
     }
 }

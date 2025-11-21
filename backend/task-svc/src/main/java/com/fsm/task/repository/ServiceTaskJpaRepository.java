@@ -5,6 +5,7 @@ import com.fsm.task.domain.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -56,4 +57,24 @@ public interface ServiceTaskJpaRepository extends JpaRepository<ServiceTask, Lon
      * @return list of tasks assigned to the technician with the specified status
      */
     List<ServiceTask> findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(Long technicianId, TaskStatus status);
+    
+    /**
+     * Find all tasks created within a date range
+     * 
+     * @param startDate the start of the date range (inclusive)
+     * @param endDate the end of the date range (inclusive)
+     * @return list of tasks created within the date range
+     */
+    List<ServiceTask> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+    
+    /**
+     * Find completed tasks within a date range
+     * Used for calculating average completion time
+     * 
+     * @param status the task status (COMPLETED)
+     * @param startDate the start of the date range (inclusive)
+     * @param endDate the end of the date range (inclusive)
+     * @return list of completed tasks within the date range
+     */
+    List<ServiceTask> findByStatusAndCreatedAtBetween(TaskStatus status, LocalDateTime startDate, LocalDateTime endDate);
 }
