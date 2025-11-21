@@ -487,6 +487,9 @@ class TaskServiceTest {
     @DisplayName("Should publish TaskCompletedEvent when status changes to COMPLETED")
     void shouldPublishTaskCompletedEventWhenStatusChangesToCompleted() {
         // Arrange
+        LocalDateTime startedAt = LocalDateTime.now().minusHours(2);
+        LocalDateTime completedAt = LocalDateTime.now();
+        
         ServiceTask existingTask = ServiceTask.builder()
                 .id(1L)
                 .title("Fix HVAC System")
@@ -495,6 +498,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .startedAt(startedAt)
                 .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -507,6 +511,9 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.COMPLETED)
+                .startedAt(startedAt)
+                .completedAt(completedAt)
+                .workSummary("Fixed the air conditioning unit")
                 .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -544,7 +551,7 @@ class TaskServiceTest {
                 .clientAddress("123 Main St, Springfield")
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
-                .status(TaskStatus.UNASSIGNED)
+                .status(TaskStatus.ASSIGNED)
                 .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -556,6 +563,7 @@ class TaskServiceTest {
                 .priority(Priority.HIGH)
                 .estimatedDuration(120)
                 .status(TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now())
                 .createdBy(1L)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -1270,5 +1278,335 @@ class TaskServiceTest {
         assertEquals(Priority.HIGH, responses.get(2).getPriority());
         
         verify(taskRepository).findByAssignedToOrderByPriorityDescCreatedAtAsc(technicianId);
+    }
+    
+    // ===== Status Transition Validation Tests =====
+    
+    @Test
+    @DisplayName("Should successfully transition from ASSIGNED to IN_PROGRESS")
+    void shouldSuccessfullyTransitionFromAssignedToInProgress() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.ASSIGNED)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(TaskStatus.IN_PROGRESS, response.getStatus());
+        assertNotNull(response.getStartedAt());
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should successfully transition from IN_PROGRESS to COMPLETED with workSummary")
+    void shouldSuccessfullyTransitionFromInProgressToCompleted() {
+        // Arrange
+        LocalDateTime startedAt = LocalDateTime.now().minusHours(2);
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(startedAt)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("Repaired and tested HVAC system")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(TaskStatus.COMPLETED, response.getStatus());
+        assertNotNull(response.getCompletedAt());
+        assertEquals("Repaired and tested HVAC system", response.getWorkSummary());
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when transitioning from UNASSIGNED to IN_PROGRESS")
+    void shouldThrowExceptionWhenTransitioningFromUnassignedToInProgress() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.UNASSIGNED)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Cannot transition from UNASSIGNED to IN_PROGRESS"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when transitioning from ASSIGNED to COMPLETED")
+    void shouldThrowExceptionWhenTransitioningFromAssignedToCompleted() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.ASSIGNED)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("Work completed")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Cannot transition from ASSIGNED to COMPLETED"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when transitioning from IN_PROGRESS to ASSIGNED")
+    void shouldThrowExceptionWhenTransitioningFromInProgressToAssigned() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now())
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.ASSIGNED)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Cannot transition from IN_PROGRESS to ASSIGNED"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when changing status of a completed task")
+    void shouldThrowExceptionWhenChangingStatusOfCompletedTask() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.COMPLETED)
+                .startedAt(LocalDateTime.now().minusHours(2))
+                .completedAt(LocalDateTime.now())
+                .workSummary("Work done")
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Cannot change status of a completed task"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should allow idempotent status update (same status)")
+    void shouldAllowIdempotentStatusUpdate() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(1))
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(TaskStatus.IN_PROGRESS, response.getStatus());
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    // ===== Timestamp Immutability Tests =====
+    
+    @Test
+    @DisplayName("Should not overwrite startedAt timestamp if already set")
+    void shouldNotOverwriteStartedAtTimestamp() {
+        // Arrange
+        LocalDateTime originalStartTime = LocalDateTime.now().minusHours(2);
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(originalStartTime)
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.IN_PROGRESS)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(originalStartTime, response.getStartedAt());
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should not overwrite completedAt timestamp if already set")
+    void shouldNotOverwriteCompletedAtTimestamp() {
+        // Arrange
+        LocalDateTime originalCompletionTime = LocalDateTime.now().minusHours(1);
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.COMPLETED)
+                .startedAt(LocalDateTime.now().minusHours(2))
+                .completedAt(originalCompletionTime)
+                .workSummary("Original work summary")
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("New work summary")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(taskRepository.save(any(ServiceTask.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        // Act
+        ServiceTaskResponse response = taskService.updateTaskStatus(1L, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(originalCompletionTime, response.getCompletedAt());
+        verify(taskRepository).save(any(ServiceTask.class));
+    }
+    
+    // ===== WorkSummary Validation Tests =====
+    
+    @Test
+    @DisplayName("Should throw exception when completing task without workSummary")
+    void shouldThrowExceptionWhenCompletingTaskWithoutWorkSummary() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(1))
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Work summary is required"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when completing task with blank workSummary")
+    void shouldThrowExceptionWhenCompletingTaskWithBlankWorkSummary() {
+        // Arrange
+        ServiceTask existingTask = ServiceTask.builder()
+                .id(1L)
+                .title("Fix HVAC System")
+                .status(TaskStatus.IN_PROGRESS)
+                .startedAt(LocalDateTime.now().minusHours(1))
+                .createdBy(1L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        UpdateTaskStatusRequest request = UpdateTaskStatusRequest.builder()
+                .status(TaskStatus.COMPLETED)
+                .workSummary("   ")
+                .build();
+        
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(existingTask));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskService.updateTaskStatus(1L, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Work summary is required"));
+        verify(taskRepository, never()).save(any(ServiceTask.class));
     }
 }

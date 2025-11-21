@@ -63,4 +63,16 @@ public class ServiceTaskResponse {
     @Schema(description = "Timestamp when the task was created", 
             example = "2025-11-20T22:00:00")
     private LocalDateTime createdAt;
+    
+    @Schema(description = "Timestamp when the task status changed to IN_PROGRESS", 
+            example = "2025-11-20T23:00:00")
+    private LocalDateTime startedAt;
+    
+    @Schema(description = "Timestamp when the task status changed to COMPLETED", 
+            example = "2025-11-21T01:00:00")
+    private LocalDateTime completedAt;
+    
+    @Schema(description = "Summary of work completed", 
+            example = "Replaced air filter and checked refrigerant levels")
+    private String workSummary;
 }

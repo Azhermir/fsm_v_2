@@ -106,6 +106,27 @@ public class ServiceTask {
     private LocalDateTime createdAt;
     
     /**
+     * Timestamp when the task status changed to IN_PROGRESS
+     * Immutable once set (domain invariant)
+     */
+    @Column
+    private LocalDateTime startedAt;
+    
+    /**
+     * Timestamp when the task status changed to COMPLETED
+     * Immutable once set (domain invariant)
+     */
+    @Column
+    private LocalDateTime completedAt;
+    
+    /**
+     * Summary of work completed for the task
+     * Required when task status is COMPLETED (domain invariant)
+     */
+    @Column(length = 2000)
+    private String workSummary;
+    
+    /**
      * Pre-persist callback to set createdAt timestamp
      */
     @PrePersist
