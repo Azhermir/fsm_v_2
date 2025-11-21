@@ -403,4 +403,109 @@ class TaskControllerTest {
         assertTrue(exception.getMessage().contains("Task can only be assigned when in UNASSIGNED or ASSIGNED status"));
         verify(taskService, times(1)).assignTask(taskId, request);
     }
+    
+    // ==================== Reassignment Tests ====================
+    
+    @Test
+    @DisplayName("POST /api/tasks/{id}/reassign - Should successfully reassign task")
+    void testReassignTask_Success() {
+        // Arrange
+        Long taskId = 1L;
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(200L)
+                .reason("Technician 100 is unavailable")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        TaskAssignmentResponse response = TaskAssignmentResponse.builder()
+                .id(2L)
+                .taskId(taskId)
+                .technicianId(200L)
+                .assignedBy("dispatcher1")
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        when(taskService.reassignTask(taskId, request)).thenReturn(response);
+        
+        // Act
+        ResponseEntity<TaskAssignmentResponse> result = taskController.reassignTask(taskId, request);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        assertNotNull(result.getBody());
+        assertEquals(200L, result.getBody().getTechnicianId());
+        assertEquals(taskId, result.getBody().getTaskId());
+        
+        verify(taskService, times(1)).reassignTask(taskId, request);
+    }
+    
+    @Test
+    @DisplayName("POST /api/tasks/{id}/reassign - Should return 400 when task not currently assigned")
+    void testReassignTask_TaskNotAssigned() {
+        // Arrange
+        Long taskId = 1L;
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(200L)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        when(taskService.reassignTask(taskId, request))
+                .thenThrow(new IllegalArgumentException("Task must be currently assigned to reassign"));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskController.reassignTask(taskId, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Task must be currently assigned to reassign"));
+        verify(taskService, times(1)).reassignTask(taskId, request);
+    }
+    
+    @Test
+    @DisplayName("POST /api/tasks/{id}/reassign - Should return 400 when reassigning to same technician")
+    void testReassignTask_SameTechnician() {
+        // Arrange
+        Long taskId = 1L;
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(100L)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        when(taskService.reassignTask(taskId, request))
+                .thenThrow(new IllegalArgumentException("Cannot reassign to the same technician"));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskController.reassignTask(taskId, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Cannot reassign to the same technician"));
+        verify(taskService, times(1)).reassignTask(taskId, request);
+    }
+    
+    @Test
+    @DisplayName("POST /api/tasks/{id}/reassign - Should return 404 when task not found")
+    void testReassignTask_TaskNotFound() {
+        // Arrange
+        Long taskId = 999L;
+        com.fsm.task.dto.ReassignTaskRequest request = com.fsm.task.dto.ReassignTaskRequest.builder()
+                .technicianId(200L)
+                .reason("Test reason")
+                .reassignedBy("dispatcher1")
+                .build();
+        
+        when(taskService.reassignTask(taskId, request))
+                .thenThrow(new IllegalArgumentException("Task not found with id: " + taskId));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskController.reassignTask(taskId, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Task not found with id: 999"));
+        verify(taskService, times(1)).reassignTask(taskId, request);
+    }
 }

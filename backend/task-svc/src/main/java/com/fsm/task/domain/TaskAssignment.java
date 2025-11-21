@@ -52,6 +52,12 @@ public class TaskAssignment {
     private String assignedBy;
     
     /**
+     * Optional reason for reassignment (for audit trail)
+     */
+    @Column(length = 500)
+    private String reason;
+    
+    /**
      * Pre-persist callback to set assignedAt timestamp
      */
     @PrePersist
@@ -75,6 +81,25 @@ public class TaskAssignment {
             Long technicianId,
             String assignedBy) {
         
+        return createAssignment(taskId, technicianId, assignedBy, null);
+    }
+    
+    /**
+     * Factory method to create a TaskAssignment with reason for reassignment
+     * 
+     * @param taskId the task ID (must not be null)
+     * @param technicianId the technician ID (must not be null)
+     * @param assignedBy the user who assigned the task (must not be blank)
+     * @param reason optional reason for reassignment (for audit trail)
+     * @return a new TaskAssignment instance
+     * @throws IllegalArgumentException if domain invariants are violated
+     */
+    public static TaskAssignment createAssignment(
+            Long taskId,
+            Long technicianId,
+            String assignedBy,
+            String reason) {
+        
         // Validate domain invariants
         if (taskId == null) {
             throw new IllegalArgumentException("Task ID must not be null");
@@ -92,6 +117,7 @@ public class TaskAssignment {
                 .taskId(taskId)
                 .technicianId(technicianId)
                 .assignedBy(assignedBy)
+                .reason(reason)
                 .assignedAt(LocalDateTime.now())
                 .build();
     }

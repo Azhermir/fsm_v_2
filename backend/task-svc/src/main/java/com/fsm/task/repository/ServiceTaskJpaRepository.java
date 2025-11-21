@@ -35,4 +35,25 @@ public interface ServiceTaskJpaRepository extends JpaRepository<ServiceTask, Lon
      * @return list of all tasks ordered by creation date
      */
     List<ServiceTask> findAllByOrderByCreatedAtDesc();
+    
+    /**
+     * Find all tasks assigned to a specific technician
+     * Sorted by priority (descending - HIGH to LOW) and creation date (ascending - oldest first)
+     * This provides tasks in order of importance and scheduled time for mobile workflow
+     * 
+     * @param technicianId the technician ID
+     * @return list of tasks assigned to the technician
+     */
+    List<ServiceTask> findByAssignedToOrderByPriorityDescCreatedAtAsc(Long technicianId);
+    
+    /**
+     * Find all tasks assigned to a specific technician with a specific status
+     * Sorted by priority (descending - HIGH to LOW) and creation date (ascending - oldest first)
+     * This provides filtered tasks in order of importance and scheduled time for mobile workflow
+     * 
+     * @param technicianId the technician ID
+     * @param status the task status to filter by
+     * @return list of tasks assigned to the technician with the specified status
+     */
+    List<ServiceTask> findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(Long technicianId, TaskStatus status);
 }

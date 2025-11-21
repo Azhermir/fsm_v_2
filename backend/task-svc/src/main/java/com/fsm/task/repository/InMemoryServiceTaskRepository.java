@@ -163,6 +163,36 @@ public class InMemoryServiceTaskRepository implements IServiceTaskRepository {
                 .toList();
     }
     
+    @Override
+    public List<ServiceTask> findByAssignedToOrderByPriorityDescCreatedAtAsc(Long technicianId) {
+        if (technicianId == null) {
+            throw new IllegalArgumentException("Technician ID cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> technicianId.equals(task.getAssignedTo()))
+                .sorted(Comparator
+                        .comparing(ServiceTask::getPriority, Comparator.reverseOrder())
+                        .thenComparing(ServiceTask::getCreatedAt))
+                .toList();
+    }
+    
+    @Override
+    public List<ServiceTask> findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(Long technicianId, TaskStatus status) {
+        if (technicianId == null) {
+            throw new IllegalArgumentException("Technician ID cannot be null");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        return storage.values().stream()
+                .filter(task -> technicianId.equals(task.getAssignedTo()))
+                .filter(task -> task.getStatus() == status)
+                .sorted(Comparator
+                        .comparing(ServiceTask::getPriority, Comparator.reverseOrder())
+                        .thenComparing(ServiceTask::getCreatedAt))
+                .toList();
+    }
+    
     /**
      * Clear all data from the repository (useful for testing)
      */
