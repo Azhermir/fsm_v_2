@@ -1,9 +1,11 @@
 package com.fsm.task.controller;
 
 import com.fsm.task.domain.TaskStatus;
+import com.fsm.task.dto.AssignTaskRequest;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ErrorResponse;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.TaskAssignmentResponse;
 import com.fsm.task.dto.UpdateTaskStatusRequest;
 import com.fsm.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -172,6 +174,53 @@ public class TaskController {
             throw e;
         } catch (Exception e) {
             log.error("Error updating task status", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Assign a task to a technician
+     * 
+     * @param taskId the task ID
+     * @param request the assign task request
+     * @return the assignment response with 200 status
+     */
+    @PostMapping("/{taskId}/assign")
+    @Operation(summary = "Assign task to technician", 
+               description = "Assigns a task to a technician and updates task status to ASSIGNED")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", 
+                     description = "Task assigned successfully",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = TaskAssignmentResponse.class))),
+        @ApiResponse(responseCode = "400", 
+                     description = "Invalid request data or task cannot be assigned",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", 
+                     description = "Task not found",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "500", 
+                     description = "Internal server error",
+                     content = @Content(mediaType = "application/json",
+                                      schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TaskAssignmentResponse> assignTask(
+            @Parameter(description = "Task ID")
+            @PathVariable Long taskId,
+            @Valid @RequestBody AssignTaskRequest request) {
+        
+        log.info("POST /api/tasks/{}/assign - Assigning task to technician {}", taskId, request.getTechnicianId());
+        
+        try {
+            TaskAssignmentResponse response = taskService.assignTask(taskId, request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid request: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error assigning task", e);
             throw e;
         }
     }
