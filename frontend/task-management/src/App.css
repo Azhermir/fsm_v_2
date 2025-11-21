@@ -1,0 +1,36 @@
+.app {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.nav-tabs {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  padding: 0 2rem;
+}
+
+.nav-tab {
+  padding: 1rem 2rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.nav-tab:hover {
+  color: #495057;
+}
+
+.nav-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  font-weight: 500;
+}
+
+.content {
+  padding: 1rem 0;
+}
