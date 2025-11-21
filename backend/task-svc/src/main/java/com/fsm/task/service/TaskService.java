@@ -269,6 +269,34 @@ public class TaskService {
     }
     
     /**
+     * Get all tasks assigned to a specific technician
+     * Optionally filter by status
+     * Tasks are sorted by priority (descending) and creation date (ascending)
+     * This provides tasks in order of importance and scheduled time for mobile workflow
+     * 
+     * @param technicianId the technician ID
+     * @param status optional status filter
+     * @return list of tasks assigned to the technician
+     */
+    @Transactional(readOnly = true)
+    public List<ServiceTaskResponse> getTechnicianTasks(Long technicianId, TaskStatus status) {
+        log.info("Retrieving tasks for technician {}" + (status != null ? " with status: " + status : ""), technicianId);
+        
+        List<ServiceTask> tasks;
+        if (status != null) {
+            tasks = taskRepository.findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(technicianId, status);
+        } else {
+            tasks = taskRepository.findByAssignedToOrderByPriorityDescCreatedAtAsc(technicianId);
+        }
+        
+        log.info("Found {} tasks for technician {}", tasks.size(), technicianId);
+        
+        return tasks.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+    
+    /**
      * Convert ServiceTask entity to ServiceTaskResponse DTO
      * 
      * @param task the task entity

@@ -58,4 +58,23 @@ public interface IServiceTaskRepository {
      * @return List of ServiceTasks with the specified status
      */
     List<ServiceTask> findByStatusOrderByCreatedAtDesc(TaskStatus status);
+    
+    /**
+     * Find all tasks assigned to a specific technician
+     * Sorted by priority (descending - HIGH to LOW) and creation date (ascending - oldest first)
+     * 
+     * @param technicianId the technician ID
+     * @return List of ServiceTasks assigned to the technician
+     */
+    List<ServiceTask> findByAssignedToOrderByPriorityDescCreatedAtAsc(Long technicianId);
+    
+    /**
+     * Find all tasks assigned to a specific technician with a specific status
+     * Sorted by priority (descending - HIGH to LOW) and creation date (ascending - oldest first)
+     * 
+     * @param technicianId the technician ID
+     * @param status the task status to filter by
+     * @return List of ServiceTasks assigned to the technician with the specified status
+     */
+    List<ServiceTask> findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(Long technicianId, TaskStatus status);
 }

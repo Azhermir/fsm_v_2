@@ -69,4 +69,23 @@ public class DatabaseServiceTaskRepository implements IServiceTaskRepository {
         }
         return jpaRepository.findByStatusOrderByCreatedAtDesc(status);
     }
+    
+    @Override
+    public List<ServiceTask> findByAssignedToOrderByPriorityDescCreatedAtAsc(Long technicianId) {
+        if (technicianId == null) {
+            throw new IllegalArgumentException("Technician ID cannot be null");
+        }
+        return jpaRepository.findByAssignedToOrderByPriorityDescCreatedAtAsc(technicianId);
+    }
+    
+    @Override
+    public List<ServiceTask> findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(Long technicianId, TaskStatus status) {
+        if (technicianId == null) {
+            throw new IllegalArgumentException("Technician ID cannot be null");
+        }
+        if (status == null) {
+            throw new IllegalArgumentException("TaskStatus cannot be null");
+        }
+        return jpaRepository.findByAssignedToAndStatusOrderByPriorityDescCreatedAtAsc(technicianId, status);
+    }
 }
