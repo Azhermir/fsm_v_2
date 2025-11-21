@@ -54,6 +54,9 @@ public class ServiceTaskResponse {
             allowableValues = {"UNASSIGNED", "ASSIGNED", "IN_PROGRESS", "COMPLETED"})
     private TaskStatus status;
     
+    @Schema(description = "ID of the technician assigned to this task", example = "1")
+    private Long assignedTo;
+    
     @Schema(description = "Timestamp when the task was created", 
             example = "2025-11-20T22:00:00")
     private LocalDateTime createdAt;

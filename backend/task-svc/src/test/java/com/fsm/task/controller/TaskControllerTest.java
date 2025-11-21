@@ -2,7 +2,9 @@ package com.fsm.task.controller;
 
 import com.fsm.task.domain.Priority;
 import com.fsm.task.domain.TaskStatus;
+import com.fsm.task.dto.AssignTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.TaskAssignmentResponse;
 import com.fsm.task.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -315,5 +317,90 @@ class TaskControllerTest {
         assertEquals(120, task.getEstimatedDuration());
         assertEquals(TaskStatus.UNASSIGNED, task.getStatus());
         assertNotNull(task.getCreatedAt());
+    }
+    
+    // ========== Assignment Tests ==========
+    
+    @Test
+    @DisplayName("Should assign task successfully")
+    void shouldAssignTaskSuccessfully() {
+        // Arrange
+        Long taskId = 1L;
+        Long technicianId = 10L;
+        String assignedBy = "dispatcher1";
+        LocalDateTime assignedAt = LocalDateTime.now();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .assignedBy(assignedBy)
+                .build();
+        
+        TaskAssignmentResponse mockResponse = TaskAssignmentResponse.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedBy(assignedBy)
+                .assignedAt(assignedAt)
+                .build();
+        
+        when(taskService.assignTask(taskId, request)).thenReturn(mockResponse);
+        
+        // Act
+        ResponseEntity<TaskAssignmentResponse> response = taskController.assignTask(taskId, request);
+        
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1L, response.getBody().getId());
+        assertEquals(taskId, response.getBody().getTaskId());
+        assertEquals(technicianId, response.getBody().getTechnicianId());
+        assertEquals(assignedBy, response.getBody().getAssignedBy());
+        assertEquals(assignedAt, response.getBody().getAssignedAt());
+        
+        verify(taskService, times(1)).assignTask(taskId, request);
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when assigning non-existent task")
+    void shouldThrowExceptionWhenAssigningNonExistentTask() {
+        // Arrange
+        Long taskId = 999L;
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(10L)
+                .assignedBy("dispatcher1")
+                .build();
+        
+        when(taskService.assignTask(taskId, request))
+                .thenThrow(new IllegalArgumentException("Task not found with id: 999"));
+        
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            taskController.assignTask(taskId, request);
+        });
+        
+        verify(taskService, times(1)).assignTask(taskId, request);
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when assigning task in invalid status")
+    void shouldThrowExceptionWhenAssigningTaskInInvalidStatus() {
+        // Arrange
+        Long taskId = 1L;
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(10L)
+                .assignedBy("dispatcher1")
+                .build();
+        
+        when(taskService.assignTask(taskId, request))
+                .thenThrow(new IllegalArgumentException(
+                        "Task can only be assigned when in UNASSIGNED or ASSIGNED status. Current status: IN_PROGRESS"));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            taskController.assignTask(taskId, request);
+        });
+        
+        assertTrue(exception.getMessage().contains("Task can only be assigned when in UNASSIGNED or ASSIGNED status"));
+        verify(taskService, times(1)).assignTask(taskId, request);
     }
 }

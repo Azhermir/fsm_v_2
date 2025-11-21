@@ -2,12 +2,16 @@ package com.fsm.task.service;
 
 import com.fsm.task.domain.Priority;
 import com.fsm.task.domain.ServiceTask;
+import com.fsm.task.domain.TaskAssignment;
 import com.fsm.task.domain.TaskStatus;
+import com.fsm.task.dto.AssignTaskRequest;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.TaskAssignmentResponse;
 import com.fsm.task.dto.UpdateTaskStatusRequest;
 import com.fsm.task.event.TaskCompletedEvent;
 import com.fsm.task.repository.IServiceTaskRepository;
+import com.fsm.task.repository.TaskAssignmentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +40,9 @@ class TaskServiceTest {
     
     @Mock
     private IServiceTaskRepository taskRepository;
+    
+    @Mock
+    private TaskAssignmentRepository assignmentRepository;
     
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -600,5 +607,256 @@ class TaskServiceTest {
         assertEquals("Task not found with id: 999", exception.getMessage());
         verify(taskRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
+    }
+    
+    // ========== Assignment Tests ==========
+    
+    @Test
+    @DisplayName("Should assign task to technician successfully")
+    void shouldAssignTaskSuccessfully() {
+        // Arrange
+        Long taskId = 1L;
+        Long technicianId = 10L;
+        String assignedBy = "dispatcher1";
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Fix HVAC")
+                .description("AC issue")
+                .clientAddress("123 Main St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        TaskAssignment assignment = TaskAssignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedBy(assignedBy)
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .assignedBy(assignedBy)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(TaskAssignment.class))).thenReturn(assignment);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        
+        // Act
+        TaskAssignmentResponse response = taskService.assignTask(taskId, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(taskId, response.getTaskId());
+        assertEquals(technicianId, response.getTechnicianId());
+        assertEquals(assignedBy, response.getAssignedBy());
+        assertNotNull(response.getAssignedAt());
+        
+        // Verify task status was updated to ASSIGNED
+        ArgumentCaptor<ServiceTask> taskCaptor = ArgumentCaptor.forClass(ServiceTask.class);
+        verify(taskRepository, times(1)).save(taskCaptor.capture());
+        ServiceTask savedTask = taskCaptor.getValue();
+        assertEquals(TaskStatus.ASSIGNED, savedTask.getStatus());
+        assertEquals(technicianId, savedTask.getAssignedTo());
+        
+        // Verify assignment was saved
+        verify(assignmentRepository, times(1)).save(any(TaskAssignment.class));
+    }
+    
+    @Test
+    @DisplayName("Should assign task with system as assignedBy when not provided")
+    void shouldAssignTaskWithSystemWhenAssignedByNotProvided() {
+        // Arrange
+        Long taskId = 1L;
+        Long technicianId = 10L;
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Fix HVAC")
+                .description("AC issue")
+                .clientAddress("123 Main St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.UNASSIGNED)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        TaskAssignment assignment = TaskAssignment.builder()
+                .id(1L)
+                .taskId(taskId)
+                .technicianId(technicianId)
+                .assignedBy("system")
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(technicianId)
+                .assignedBy(null)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(TaskAssignment.class))).thenReturn(assignment);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        
+        // Act
+        TaskAssignmentResponse response = taskService.assignTask(taskId, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals("system", response.getAssignedBy());
+        
+        // Verify assignment was created with "system" as assignedBy
+        ArgumentCaptor<TaskAssignment> assignmentCaptor = ArgumentCaptor.forClass(TaskAssignment.class);
+        verify(assignmentRepository, times(1)).save(assignmentCaptor.capture());
+        TaskAssignment savedAssignment = assignmentCaptor.getValue();
+        assertEquals("system", savedAssignment.getAssignedBy());
+    }
+    
+    @Test
+    @DisplayName("Should allow reassigning already assigned task")
+    void shouldAllowReassigningAlreadyAssignedTask() {
+        // Arrange
+        Long taskId = 1L;
+        Long oldTechnicianId = 10L;
+        Long newTechnicianId = 20L;
+        String assignedBy = "dispatcher1";
+        
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Fix HVAC")
+                .description("AC issue")
+                .clientAddress("123 Main St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.ASSIGNED)
+                .assignedTo(oldTechnicianId)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        TaskAssignment assignment = TaskAssignment.builder()
+                .id(2L)
+                .taskId(taskId)
+                .technicianId(newTechnicianId)
+                .assignedBy(assignedBy)
+                .assignedAt(LocalDateTime.now())
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(newTechnicianId)
+                .assignedBy(assignedBy)
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        when(assignmentRepository.save(any(TaskAssignment.class))).thenReturn(assignment);
+        when(taskRepository.save(any(ServiceTask.class))).thenReturn(task);
+        
+        // Act
+        TaskAssignmentResponse response = taskService.assignTask(taskId, request);
+        
+        // Assert
+        assertNotNull(response);
+        assertEquals(newTechnicianId, response.getTechnicianId());
+        
+        // Verify task was updated with new technician
+        ArgumentCaptor<ServiceTask> taskCaptor = ArgumentCaptor.forClass(ServiceTask.class);
+        verify(taskRepository, times(1)).save(taskCaptor.capture());
+        ServiceTask savedTask = taskCaptor.getValue();
+        assertEquals(newTechnicianId, savedTask.getAssignedTo());
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when assigning non-existent task")
+    void shouldThrowExceptionWhenAssigningNonExistentTask() {
+        // Arrange
+        Long taskId = 999L;
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(10L)
+                .assignedBy("dispatcher1")
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.assignTask(taskId, request)
+        );
+        
+        assertEquals("Task not found with id: 999", exception.getMessage());
+        verify(assignmentRepository, never()).save(any());
+        verify(taskRepository, times(1)).findById(taskId);
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when assigning task in IN_PROGRESS status")
+    void shouldThrowExceptionWhenAssigningInProgressTask() {
+        // Arrange
+        Long taskId = 1L;
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Fix HVAC")
+                .description("AC issue")
+                .clientAddress("123 Main St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.IN_PROGRESS)
+                .assignedTo(10L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(20L)
+                .assignedBy("dispatcher1")
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.assignTask(taskId, request)
+        );
+        
+        assertTrue(exception.getMessage().contains("Task can only be assigned when in UNASSIGNED or ASSIGNED status"));
+        verify(assignmentRepository, never()).save(any());
+    }
+    
+    @Test
+    @DisplayName("Should throw exception when assigning completed task")
+    void shouldThrowExceptionWhenAssigningCompletedTask() {
+        // Arrange
+        Long taskId = 1L;
+        ServiceTask task = ServiceTask.builder()
+                .id(taskId)
+                .title("Fix HVAC")
+                .description("AC issue")
+                .clientAddress("123 Main St")
+                .priority(Priority.HIGH)
+                .estimatedDuration(120)
+                .status(TaskStatus.COMPLETED)
+                .assignedTo(10L)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        AssignTaskRequest request = AssignTaskRequest.builder()
+                .technicianId(20L)
+                .assignedBy("dispatcher1")
+                .build();
+        
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
+        
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.assignTask(taskId, request)
+        );
+        
+        assertTrue(exception.getMessage().contains("Task can only be assigned when in UNASSIGNED or ASSIGNED status"));
+        verify(assignmentRepository, never()).save(any());
     }
 }

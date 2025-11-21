@@ -1,12 +1,16 @@
 package com.fsm.task.service;
 
 import com.fsm.task.domain.ServiceTask;
+import com.fsm.task.domain.TaskAssignment;
 import com.fsm.task.domain.TaskStatus;
+import com.fsm.task.dto.AssignTaskRequest;
 import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
+import com.fsm.task.dto.TaskAssignmentResponse;
 import com.fsm.task.dto.UpdateTaskStatusRequest;
 import com.fsm.task.event.TaskCompletedEvent;
 import com.fsm.task.repository.IServiceTaskRepository;
+import com.fsm.task.repository.TaskAssignmentRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,12 +30,15 @@ import java.util.stream.Collectors;
 public class TaskService {
     
     private final IServiceTaskRepository taskRepository;
+    private final TaskAssignmentRepository assignmentRepository;
     private final ApplicationEventPublisher eventPublisher;
     
     @Autowired
-    public TaskService(IServiceTaskRepository taskRepository, 
+    public TaskService(IServiceTaskRepository taskRepository,
+                      TaskAssignmentRepository assignmentRepository,
                       ApplicationEventPublisher eventPublisher) {
         this.taskRepository = taskRepository;
+        this.assignmentRepository = assignmentRepository;
         this.eventPublisher = eventPublisher;
     }
     
@@ -145,6 +152,62 @@ public class TaskService {
     }
     
     /**
+     * Assign a task to a technician
+     * Domain invariants:
+     * - Task must exist and be in Unassigned or Assigned status
+     * - A task can only be assigned to one technician at a time
+     * - Technician ID must be provided
+     * 
+     * @param taskId the task ID
+     * @param request the assign task request containing technician ID
+     * @return the assignment response
+     */
+    @Transactional
+    public TaskAssignmentResponse assignTask(Long taskId, AssignTaskRequest request) {
+        log.info("Assigning task {} to technician {}", taskId, request.getTechnicianId());
+        
+        // Find the task
+        ServiceTask task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + taskId));
+        
+        // Validate task status - only UNASSIGNED or ASSIGNED tasks can be (re)assigned
+        if (task.getStatus() != TaskStatus.UNASSIGNED && task.getStatus() != TaskStatus.ASSIGNED) {
+            throw new IllegalArgumentException(
+                    "Task can only be assigned when in UNASSIGNED or ASSIGNED status. Current status: " + task.getStatus());
+        }
+        
+        // Set assignedBy to "system" if not provided
+        String assignedBy = request.getAssignedBy();
+        if (assignedBy == null || assignedBy.isBlank()) {
+            assignedBy = "system";
+        }
+        
+        // Create assignment record
+        TaskAssignment assignment = TaskAssignment.createAssignment(
+                taskId,
+                request.getTechnicianId(),
+                assignedBy
+        );
+        
+        TaskAssignment savedAssignment = assignmentRepository.save(assignment);
+        
+        // Update task status to ASSIGNED and set assignedTo
+        task.setStatus(TaskStatus.ASSIGNED);
+        task.setAssignedTo(request.getTechnicianId());
+        taskRepository.save(task);
+        
+        log.info("Task {} assigned to technician {} successfully", taskId, request.getTechnicianId());
+        
+        return TaskAssignmentResponse.builder()
+                .id(savedAssignment.getId())
+                .taskId(savedAssignment.getTaskId())
+                .technicianId(savedAssignment.getTechnicianId())
+                .assignedAt(savedAssignment.getAssignedAt())
+                .assignedBy(savedAssignment.getAssignedBy())
+                .build();
+    }
+    
+    /**
      * Convert ServiceTask entity to ServiceTaskResponse DTO
      * 
      * @param task the task entity
@@ -161,6 +224,7 @@ public class TaskService {
                 .priority(task.getPriority())
                 .estimatedDuration(task.getEstimatedDuration())
                 .status(task.getStatus())
+                .assignedTo(task.getAssignedTo())
                 .createdAt(task.getCreatedAt())
                 .build();
     }

@@ -87,6 +87,12 @@ public class ServiceTask {
     private TaskStatus status;
     
     /**
+     * ID of the technician to whom this task is assigned
+     */
+    @Column
+    private Long assignedTo;
+    
+    /**
      * Timestamp when the task was created
      */
     @Column(nullable = false, updatable = false)
