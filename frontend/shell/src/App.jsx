@@ -12,6 +12,11 @@ function App() {
           title="Task Management"
           className="micro-frontend"
         />
+        <iframe
+          src="http://localhost:3002"
+          title="Analytics Dashboard"
+          className="micro-frontend"
+        />
       </main>
     </div>
   )

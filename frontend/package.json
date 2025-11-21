@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "shell",
-    "task-management"
+    "task-management",
+    "analytics"
   ],
   "scripts": {
     "dev": "lerna run dev --parallel",
