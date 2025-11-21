@@ -38,6 +38,14 @@ public class CreateServiceTaskRequest {
             example = "123 Main St, Springfield, IL 62701", required = true)
     private String clientAddress;
     
+    @Schema(description = "Latitude coordinate of the service location (geocoded from address)", 
+            example = "39.7817", required = false)
+    private Double latitude;
+    
+    @Schema(description = "Longitude coordinate of the service location (geocoded from address)", 
+            example = "-89.6501", required = false)
+    private Double longitude;
+    
     @NotNull(message = "Priority is required")
     @Schema(description = "Priority level of the task", 
             example = "HIGH", required = true, 

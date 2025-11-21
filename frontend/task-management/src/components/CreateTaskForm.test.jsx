@@ -104,6 +104,8 @@ describe('CreateTaskForm', () => {
             title: 'Fix HVAC',
             description: 'AC not working',
             clientAddress: '123 Main St',
+            latitude: null,
+            longitude: null,
             priority: 'HIGH',
             estimatedDuration: 2,
           }),

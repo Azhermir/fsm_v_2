@@ -50,6 +50,8 @@ public class TaskService {
                 request.getTitle(),
                 request.getDescription(),
                 request.getClientAddress(),
+                request.getLatitude(),
+                request.getLongitude(),
                 request.getPriority(),
                 request.getEstimatedDuration()
         );
@@ -154,6 +156,8 @@ public class TaskService {
                 .title(task.getTitle())
                 .description(task.getDescription())
                 .clientAddress(task.getClientAddress())
+                .latitude(task.getLatitude())
+                .longitude(task.getLongitude())
                 .priority(task.getPriority())
                 .estimatedDuration(task.getEstimatedDuration())
                 .status(task.getStatus())

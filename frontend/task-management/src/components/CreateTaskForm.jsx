@@ -27,6 +27,8 @@ const CreateTaskForm = () => {
     title: '',
     description: '',
     clientAddress: '',
+    latitude: null,
+    longitude: null,
     priority: 'MEDIUM',
     estimatedDuration: '',
   })
@@ -152,6 +154,8 @@ const CreateTaskForm = () => {
         title: '',
         description: '',
         clientAddress: '',
+        latitude: null,
+        longitude: null,
         priority: 'MEDIUM',
         estimatedDuration: '',
       })

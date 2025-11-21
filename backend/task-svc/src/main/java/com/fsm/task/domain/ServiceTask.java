@@ -52,6 +52,18 @@ public class ServiceTask {
     private String clientAddress;
     
     /**
+     * Latitude coordinate of the service location (geocoded from address)
+     */
+    @Column
+    private Double latitude;
+    
+    /**
+     * Longitude coordinate of the service location (geocoded from address)
+     */
+    @Column
+    private Double longitude;
+    
+    /**
      * Priority level of the task - must be one of the defined enum values (domain invariant)
      */
     @NotNull(message = "Priority must be one of the defined enum values")
@@ -96,6 +108,8 @@ public class ServiceTask {
      * @param title the task title (must not be blank, max 200 characters)
      * @param description the task description (must not be blank, max 2000 characters)
      * @param clientAddress the client's address (must not be blank)
+     * @param latitude the latitude coordinate (optional, geocoded from address)
+     * @param longitude the longitude coordinate (optional, geocoded from address)
      * @param priority the task priority (must be valid enum)
      * @param estimatedDuration the estimated duration in minutes (must be positive)
      * @return a new ServiceTask instance
@@ -104,7 +118,9 @@ public class ServiceTask {
     public static ServiceTask createServiceTask(
             String title, 
             String description, 
-            String clientAddress, 
+            String clientAddress,
+            Double latitude,
+            Double longitude,
             Priority priority, 
             Integer estimatedDuration) {
         
@@ -141,10 +157,24 @@ public class ServiceTask {
                 .title(title)
                 .description(description)
                 .clientAddress(clientAddress)
+                .latitude(latitude)
+                .longitude(longitude)
                 .priority(priority)
                 .estimatedDuration(estimatedDuration)
                 .status(TaskStatus.UNASSIGNED)
                 .createdAt(LocalDateTime.now())
                 .build();
+    }
+    
+    /**
+     * Overloaded factory method for backward compatibility (without coordinates)
+     */
+    public static ServiceTask createServiceTask(
+            String title, 
+            String description, 
+            String clientAddress, 
+            Priority priority, 
+            Integer estimatedDuration) {
+        return createServiceTask(title, description, clientAddress, null, null, priority, estimatedDuration);
     }
 }
