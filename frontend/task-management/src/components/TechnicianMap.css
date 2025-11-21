@@ -1,0 +1,161 @@
+.technician-map-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+}
+
+.map-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.map-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.map-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.refresh-button {
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.refresh-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.last-update {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.legend {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.map-wrapper {
+  flex: 1;
+  min-height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.error-message {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.technician-popup h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.technician-popup p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.technician-popup .status {
+  font-weight: bold;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.technician-popup .status.status-available {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.technician-popup .status.status-busy {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.technician-popup .status.status-offline {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.technician-popup .phone {
+  color: #555;
+}
+
+.technician-popup .location-time {
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #ddd;
+}
+
+/* Override leaflet popup styles */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 1rem;
+  min-width: 200px;
+}
+
+/* Custom marker styling */
+.custom-marker {
+  background: none;
+  border: none;
+}
