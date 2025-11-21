@@ -114,6 +114,12 @@ public class TaskService {
      * Update task status
      * Publishes TaskCompletedEvent when status changes to COMPLETED
      * 
+     * Domain invariants enforced:
+     * - Status transitions must follow valid workflow: ASSIGNED → IN_PROGRESS → COMPLETED
+     * - Cannot skip states
+     * - Completed tasks must have workSummary
+     * - Timestamps are immutable once set
+     * 
      * @param taskId the task ID
      * @param request the update status request
      * @return the updated task response
@@ -127,13 +133,40 @@ public class TaskService {
                 .orElseThrow(() -> new IllegalArgumentException("Task not found with id: " + taskId));
         
         TaskStatus oldStatus = task.getStatus();
-        task.setStatus(request.getStatus());
+        TaskStatus newStatus = request.getStatus();
+        
+        // Validate status transition
+        validateStatusTransition(oldStatus, newStatus);
+        
+        // Validate workSummary for COMPLETED status
+        if (newStatus == TaskStatus.COMPLETED && (request.getWorkSummary() == null || request.getWorkSummary().isBlank())) {
+            throw new IllegalArgumentException("Work summary is required when completing a task");
+        }
+        
+        // Set timestamps based on status change
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Set startedAt when status changes to IN_PROGRESS (immutable once set)
+        if (newStatus == TaskStatus.IN_PROGRESS && task.getStartedAt() == null) {
+            task.setStartedAt(now);
+            log.info("Task {} started at {}", taskId, now);
+        }
+        
+        // Set completedAt when status changes to COMPLETED (immutable once set)
+        if (newStatus == TaskStatus.COMPLETED && task.getCompletedAt() == null) {
+            task.setCompletedAt(now);
+            task.setWorkSummary(request.getWorkSummary());
+            log.info("Task {} completed at {}", taskId, now);
+        }
+        
+        // Update status
+        task.setStatus(newStatus);
         
         // Save the updated task
         ServiceTask updatedTask = taskRepository.save(task);
         
         // Publish TaskCompletedEvent if status changed to COMPLETED
-        if (request.getStatus() == TaskStatus.COMPLETED && oldStatus != TaskStatus.COMPLETED) {
+        if (newStatus == TaskStatus.COMPLETED && oldStatus != TaskStatus.COMPLETED) {
             log.info("Publishing TaskCompletedEvent for task {}", taskId);
             
             TaskCompletedEvent event = TaskCompletedEvent.builder()
@@ -141,7 +174,7 @@ public class TaskService {
                     .title(updatedTask.getTitle())
                     .clientAddress(updatedTask.getClientAddress())
                     .workSummary(request.getWorkSummary())
-                    .completionTime(LocalDateTime.now())
+                    .completionTime(updatedTask.getCompletedAt())
                     .build();
             
             eventPublisher.publishEvent(event);
@@ -150,6 +183,57 @@ public class TaskService {
         
         log.info("Task {} status updated successfully", taskId);
         return convertToResponse(updatedTask);
+    }
+    
+    /**
+     * Validate status transitions according to domain rules
+     * Valid transitions:
+     * - UNASSIGNED → ASSIGNED (via assignment)
+     * - ASSIGNED → IN_PROGRESS
+     * - IN_PROGRESS → COMPLETED
+     * - Any status can stay the same (idempotent)
+     * 
+     * @param oldStatus current status
+     * @param newStatus desired status
+     * @throws IllegalArgumentException if transition is invalid
+     */
+    private void validateStatusTransition(TaskStatus oldStatus, TaskStatus newStatus) {
+        // Allow idempotent updates (same status)
+        if (oldStatus == newStatus) {
+            return;
+        }
+        
+        // Validate transition based on old status
+        switch (oldStatus) {
+            case UNASSIGNED:
+                // From UNASSIGNED, can only go to ASSIGNED (via assignment endpoint)
+                if (newStatus != TaskStatus.ASSIGNED) {
+                    throw new IllegalArgumentException(
+                            "Cannot transition from UNASSIGNED to " + newStatus + ". Task must be assigned first.");
+                }
+                break;
+                
+            case ASSIGNED:
+                // From ASSIGNED, can only go to IN_PROGRESS
+                if (newStatus != TaskStatus.IN_PROGRESS) {
+                    throw new IllegalArgumentException(
+                            "Cannot transition from ASSIGNED to " + newStatus + ". Task must be started (IN_PROGRESS) first.");
+                }
+                break;
+                
+            case IN_PROGRESS:
+                // From IN_PROGRESS, can only go to COMPLETED
+                if (newStatus != TaskStatus.COMPLETED) {
+                    throw new IllegalArgumentException(
+                            "Cannot transition from IN_PROGRESS to " + newStatus + ". Task can only be completed.");
+                }
+                break;
+                
+            case COMPLETED:
+                // Cannot transition from COMPLETED to any other status
+                throw new IllegalArgumentException(
+                        "Cannot change status of a completed task. Current status: COMPLETED");
+        }
     }
     
     /**
@@ -324,6 +408,9 @@ public class TaskService {
                 .assignedTo(task.getAssignedTo())
                 .createdBy(task.getCreatedBy())
                 .createdAt(task.getCreatedAt())
+                .startedAt(task.getStartedAt())
+                .completedAt(task.getCompletedAt())
+                .workSummary(task.getWorkSummary())
                 .build();
     }
 }

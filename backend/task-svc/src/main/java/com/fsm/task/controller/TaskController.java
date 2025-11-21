@@ -138,16 +138,16 @@ public class TaskController {
      * @param request the update status request
      * @return the updated task with 200 status
      */
-    @PutMapping("/{taskId}/status")
+    @PatchMapping("/{taskId}/status")
     @Operation(summary = "Update task status", 
-               description = "Updates the status of a service task. Triggers notification when status changes to COMPLETED")
+               description = "Updates the status of a service task. Validates status transitions (ASSIGNED → IN_PROGRESS → COMPLETED). Sets startedAt timestamp when changing to IN_PROGRESS, completedAt timestamp when changing to COMPLETED. Requires workSummary for COMPLETED status. Triggers notification when status changes to COMPLETED")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", 
                      description = "Task status updated successfully",
                      content = @Content(mediaType = "application/json",
                                       schema = @Schema(implementation = ServiceTaskResponse.class))),
         @ApiResponse(responseCode = "400", 
-                     description = "Invalid request data",
+                     description = "Invalid request data or invalid status transition",
                      content = @Content(mediaType = "application/json",
                                       schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(responseCode = "404", 
@@ -164,7 +164,7 @@ public class TaskController {
             @PathVariable Long taskId,
             @Valid @RequestBody UpdateTaskStatusRequest request) {
         
-        log.info("PUT /api/tasks/{}/status - Updating task status to {}", taskId, request.getStatus());
+        log.info("PATCH /api/tasks/{}/status - Updating task status to {}", taskId, request.getStatus());
         
         try {
             ServiceTaskResponse response = taskService.updateTaskStatus(taskId, request);
