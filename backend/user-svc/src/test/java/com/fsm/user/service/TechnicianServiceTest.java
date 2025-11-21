@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -180,7 +181,7 @@ class TechnicianServiceTest {
         assertNotNull(technician.getCurrentLocation().getTimestamp());
         // Timestamp should be recent (within last minute)
         assertTrue(technician.getCurrentLocation().getTimestamp().isAfter(
-                java.time.LocalDateTime.now().minusMinutes(1)));
+                LocalDateTime.now().minusMinutes(1)));
     }
     
     @Test
