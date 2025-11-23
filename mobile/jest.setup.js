@@ -19,10 +19,27 @@ global.__ExpoImportMetaRegistry = {
 // Mock Expo imports
 jest.mock('expo', () => ({
   __esModule: true,
+  isRunningInExpoGo: () => false,
 }));
 
 jest.mock('expo-status-bar', () => ({
   StatusBar: 'StatusBar',
+}));
+
+// Mock expo-notifications
+jest.mock('expo-notifications', () => ({
+  setNotificationHandler: jest.fn(),
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ data: 'test-token' })),
+  addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+}));
+
+// Mock expo-device
+jest.mock('expo-device', () => ({
+  isDevice: true,
+  modelName: 'TestDevice',
 }));
 
 // Mock AsyncStorage
