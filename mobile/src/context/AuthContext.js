@@ -67,9 +67,12 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Retrieve device ID for cleanup
+      const storedDeviceId = deviceId || await AsyncStorage.getItem('deviceId');
+      
       // Unregister push notifications before logout
-      if (user && deviceId) {
-        await unregisterDeviceToken(user.id, deviceId);
+      if (user && storedDeviceId) {
+        await unregisterDeviceToken(user.id, storedDeviceId);
       }
       
       await AsyncStorage.removeItem('user');

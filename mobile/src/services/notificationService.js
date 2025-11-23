@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Configuration
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
@@ -66,12 +67,26 @@ export const getExpoPushToken = async () => {
 
 /**
  * Get a unique device identifier
- * @returns {string} Device identifier
+ * This generates a consistent ID for the device based on platform and model
+ * @returns {Promise<string>} Device identifier
  */
-export const getDeviceId = () => {
-  // Generate a unique device ID based on device info
-  const deviceId = `${Platform.OS}-${Device.modelName || 'unknown'}-${Date.now()}`;
-  return deviceId;
+export const getDeviceId = async () => {
+  try {
+    // Try to get existing device ID from storage
+    let deviceId = await AsyncStorage.getItem('device_unique_id');
+    
+    if (!deviceId) {
+      // Generate a new device ID if none exists
+      deviceId = `${Platform.OS}-${Device.modelName || 'unknown'}-${Date.now()}`;
+      await AsyncStorage.setItem('device_unique_id', deviceId);
+    }
+    
+    return deviceId;
+  } catch (error) {
+    console.error('Error getting device ID:', error);
+    // Fallback to a basic identifier if storage fails
+    return `${Platform.OS}-${Device.modelName || 'unknown'}-${Date.now()}`;
+  }
 };
 
 /**
@@ -161,8 +176,8 @@ export const initializePushNotifications = async (userId) => {
       return null;
     }
 
-    // Get device ID
-    const deviceId = getDeviceId();
+    // Get device ID (now async)
+    const deviceId = await getDeviceId();
 
     // Register with backend
     const result = await registerDeviceToken(userId, pushToken, deviceId);

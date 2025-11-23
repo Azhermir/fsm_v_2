@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   requestNotificationPermissions,
   getExpoPushToken,
@@ -11,6 +12,15 @@ import {
   setupNotificationListeners,
   getTaskIdFromNotification,
 } from './notificationService';
+
+// Mock AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(),
+    setItem: jest.fn(),
+  },
+}));
 
 // Mock expo-notifications
 jest.mock('expo-notifications', () => ({
@@ -34,8 +44,8 @@ global.fetch = jest.fn();
 describe('notificationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset Date.now mock
-    jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+    AsyncStorage.getItem.mockResolvedValue(null);
+    AsyncStorage.setItem.mockResolvedValue();
   });
 
   afterEach(() => {
@@ -125,23 +135,55 @@ describe('notificationService', () => {
   });
 
   describe('getDeviceId', () => {
-    it('should generate a device ID with platform and model', () => {
+    it('should generate and store a new device ID if none exists', async () => {
       Platform.OS = 'ios';
-      const deviceId = getDeviceId();
+      AsyncStorage.getItem.mockResolvedValue(null);
+      jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+      const deviceId = await getDeviceId();
 
       expect(deviceId).toContain('ios');
       expect(deviceId).toContain('MockDevice');
       expect(deviceId).toContain('1234567890');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('device_unique_id', deviceId);
+      
+      jest.restoreAllMocks();
     });
 
-    it('should handle unknown model name', () => {
+    it('should return existing device ID from storage', async () => {
+      const existingId = 'ios-MockDevice-9876543210';
+      AsyncStorage.getItem.mockResolvedValue(existingId);
+
+      const deviceId = await getDeviceId();
+
+      expect(deviceId).toBe(existingId);
+      expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+    });
+
+    it('should handle unknown model name', async () => {
       Device.modelName = null;
-      const deviceId = getDeviceId();
+      AsyncStorage.getItem.mockResolvedValue(null);
+      jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+      const deviceId = await getDeviceId();
 
       expect(deviceId).toContain('unknown');
       
       // Reset
       Device.modelName = 'MockDevice';
+      jest.restoreAllMocks();
+    });
+
+    it('should handle storage errors gracefully', async () => {
+      AsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
+      jest.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+      const deviceId = await getDeviceId();
+
+      expect(deviceId).toBeTruthy();
+      expect(deviceId).toContain(Platform.OS);
+      
+      jest.restoreAllMocks();
     });
   });
 
