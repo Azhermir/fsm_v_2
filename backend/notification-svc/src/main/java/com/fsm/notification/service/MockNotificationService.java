@@ -180,7 +180,7 @@ public class MockNotificationService implements INotificationService {
             // Consider it successful if at least one device received the notification
             return successCount > 0;
         } catch (Exception e) {
-            log.error("Error logging notification to console", e);
+            log.error("Error sending push notification", e);
             return false;
         }
     }
