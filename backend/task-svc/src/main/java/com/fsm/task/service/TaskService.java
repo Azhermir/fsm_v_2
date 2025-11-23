@@ -8,6 +8,7 @@ import com.fsm.task.dto.CreateServiceTaskRequest;
 import com.fsm.task.dto.ServiceTaskResponse;
 import com.fsm.task.dto.TaskAssignmentResponse;
 import com.fsm.task.dto.UpdateTaskStatusRequest;
+import com.fsm.task.event.TaskAssignedEvent;
 import com.fsm.task.event.TaskCompletedEvent;
 import com.fsm.task.repository.IServiceTaskRepository;
 import com.fsm.task.repository.TaskAssignmentRepository;
@@ -279,9 +280,29 @@ public class TaskService {
         // Update task status to ASSIGNED and set assignedTo
         task.setStatus(TaskStatus.ASSIGNED);
         task.setAssignedTo(request.getTechnicianId());
-        taskRepository.save(task);
+        ServiceTask updatedTask = taskRepository.save(task);
         
         log.info("Task {} assigned to technician {} successfully", taskId, request.getTechnicianId());
+        
+        // Publish TaskAssignedEvent
+        log.info("Publishing TaskAssignedEvent for task {}", taskId);
+        TaskAssignedEvent event = TaskAssignedEvent.builder()
+                .taskId(updatedTask.getId())
+                .title(updatedTask.getTitle())
+                .description(updatedTask.getDescription())
+                .clientAddress(updatedTask.getClientAddress())
+                .latitude(updatedTask.getLatitude())
+                .longitude(updatedTask.getLongitude())
+                .priority(updatedTask.getPriority())
+                .estimatedDuration(updatedTask.getEstimatedDuration())
+                .technicianId(request.getTechnicianId())
+                .customerId(updatedTask.getCreatedBy()) // createdBy is the customer/dispatcher ID
+                .assignedAt(savedAssignment.getAssignedAt())
+                .assignedBy(assignedBy)
+                .build();
+        
+        eventPublisher.publishEvent(event);
+        log.info("TaskAssignedEvent published for task {}", taskId);
         
         return TaskAssignmentResponse.builder()
                 .id(savedAssignment.getId())
@@ -342,10 +363,30 @@ public class TaskService {
         
         // Update task's assignedTo field to new technician
         task.setAssignedTo(request.getTechnicianId());
-        taskRepository.save(task);
+        ServiceTask updatedTask = taskRepository.save(task);
         
         log.info("Task {} reassigned from technician {} to {} successfully", 
                 taskId, oldTechnicianId, request.getTechnicianId());
+        
+        // Publish TaskAssignedEvent for reassignment
+        log.info("Publishing TaskAssignedEvent for task reassignment {}", taskId);
+        TaskAssignedEvent event = TaskAssignedEvent.builder()
+                .taskId(updatedTask.getId())
+                .title(updatedTask.getTitle())
+                .description(updatedTask.getDescription())
+                .clientAddress(updatedTask.getClientAddress())
+                .latitude(updatedTask.getLatitude())
+                .longitude(updatedTask.getLongitude())
+                .priority(updatedTask.getPriority())
+                .estimatedDuration(updatedTask.getEstimatedDuration())
+                .technicianId(request.getTechnicianId())
+                .customerId(updatedTask.getCreatedBy())
+                .assignedAt(savedAssignment.getAssignedAt())
+                .assignedBy(reassignedBy)
+                .build();
+        
+        eventPublisher.publishEvent(event);
+        log.info("TaskAssignedEvent published for task reassignment {}", taskId);
         
         return TaskAssignmentResponse.builder()
                 .id(savedAssignment.getId())
