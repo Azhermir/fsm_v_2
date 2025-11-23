@@ -17,13 +17,14 @@ This is the React Native mobile application for the Field Service Management (FS
 - ✅ Responsive design with proper empty and error states
 - ✅ Offline support with cached data display
 - ✅ Mock data fallback for development
+- ✅ Push notifications for task assignments
+- ✅ Deep linking to task details from notifications
 
 ### Planned
 - 🔜 Task detail view
 - 🔜 Status update functionality
 - 🔜 Integration with backend API (depends on issue #116)
 - 🔜 Real-time task updates
-- 🔜 Push notifications
 
 ## Technology Stack
 
@@ -32,6 +33,7 @@ This is the React Native mobile application for the Field Service Management (FS
 - **React**: 19.1.0
 - **React Navigation**: Stack Navigator for screen navigation
 - **AsyncStorage**: Local storage for user data persistence
+- **Expo Notifications**: Push notification support with FCM integration
 
 ## Project Structure
 
@@ -44,7 +46,8 @@ mobile/
 │   │   ├── LoginScreen.js       # Authentication screen
 │   │   └── TaskListScreen.js    # Task list view
 │   ├── services/
-│   │   └── taskService.js       # API integration and utilities
+│   │   ├── taskService.js       # API integration and utilities
+│   │   └── notificationService.js # Push notification integration
 │   ├── context/
 │   │   └── AuthContext.js       # Authentication context
 │   └── utils/                   # Utility functions
@@ -144,8 +147,11 @@ The app integrates with the backend API at `http://localhost:8080/api`.
 ### Endpoints Used
 
 - **GET /api/technicians/:id/tasks** - Fetch tasks assigned to a technician
+- **POST /api/device-tokens** - Register device token for push notifications
+- **DELETE /api/device-tokens/:userId/:deviceId** - Unregister device token
+- **GET /api/device-tokens/:userId** - Get active device tokens
 
-**Note:** This endpoint is being implemented in issue #116. Until then, the app uses mock data for development and testing.
+**Note:** The technician tasks endpoint is being implemented in issue #116. Until then, the app uses mock data for development and testing.
 
 ### Mock Data
 
@@ -154,6 +160,89 @@ When the API is unavailable, the app displays mock tasks including:
 - Replace Water Heater (HIGH priority)
 - Install New Thermostat (MEDIUM priority)
 - Routine Maintenance Check (LOW priority)
+
+## Push Notifications
+
+The mobile app supports push notifications for task assignments using Firebase Cloud Messaging (FCM) via Expo's push notification service.
+
+### How It Works
+
+1. **Registration**: When a user logs in, the app automatically:
+   - Requests notification permissions from the user
+   - Obtains an Expo push token
+   - Registers the device token with the backend API
+
+2. **Notification Delivery**: When a task is assigned to a technician:
+   - The backend sends a push notification to all registered devices for that technician
+   - Notification includes task ID, priority, and location
+   - Technician receives notification on their device
+
+3. **Deep Linking**: When a technician taps a notification:
+   - The app opens automatically
+   - User is navigated directly to the task detail screen
+   - Task information is immediately available
+
+### Setup for Development
+
+#### On Physical Devices
+
+Push notifications work best on physical devices. To test:
+
+1. Run the app on a physical iOS or Android device via Expo Go or standalone build
+2. Log in with a technician ID
+3. Grant notification permissions when prompted
+4. The device token will be registered automatically
+
+#### Firebase Configuration (Production)
+
+For production builds, you'll need to configure Firebase:
+
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Add your iOS and Android apps
+3. Download `google-services.json` (Android) and place in the `mobile/` directory
+4. Download `GoogleService-Info.plist` (iOS) and add to the iOS project
+5. Update `app.json` with your Firebase configuration
+
+### Testing Notifications
+
+To test the notification flow:
+
+1. Start the backend notification service
+2. Log into the mobile app on a device
+3. Assign a task to the technician via the backend API
+4. The notification should appear on the device
+5. Tap the notification to navigate to the task detail
+
+### Notification Payload
+
+Notifications include the following data:
+```json
+{
+  "taskId": "123",
+  "type": "TASK_ASSIGNED",
+  "title": "New Task Assigned",
+  "body": "Fix HVAC System - HIGH Priority"
+}
+```
+
+### Permissions
+
+The app requests notification permissions on login. If denied:
+- User can still use the app normally
+- No push notifications will be received
+- Permissions can be granted later in device settings
+
+### Troubleshooting
+
+**Notifications not received:**
+- Ensure device token was registered (check backend logs)
+- Verify notification permissions are granted
+- Check that backend notification service is running
+- For iOS, ensure you're using a physical device (not simulator)
+
+**Deep linking not working:**
+- Ensure the notification includes a valid `taskId` in the data payload
+- Check that the task detail screen exists and is accessible
 
 ## Domain Concepts
 
