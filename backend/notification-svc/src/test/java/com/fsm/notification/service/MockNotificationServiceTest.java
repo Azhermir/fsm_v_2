@@ -4,6 +4,7 @@ import com.fsm.notification.domain.Notification;
 import com.fsm.notification.domain.NotificationChannel;
 import com.fsm.notification.domain.NotificationStatus;
 import com.fsm.notification.domain.NotificationType;
+import com.fsm.notification.provider.IPushNotificationProvider;
 import com.fsm.notification.repository.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +31,12 @@ class MockNotificationServiceTest {
     
     @Mock
     private NotificationRepository notificationRepository;
+    
+    @Mock
+    private IPushNotificationProvider pushNotificationProvider;
+    
+    @Mock
+    private DeviceTokenService deviceTokenService;
     
     @InjectMocks
     private MockNotificationService notificationService;
@@ -298,5 +306,117 @@ class MockNotificationServiceTest {
         // Then
         assertEquals(NotificationStatus.SENT, result.getStatus());
         verify(notificationRepository).save(any(Notification.class));
+    }
+    
+    @Test
+    void testSendNotification_PushChannel_WithDeviceTokens() {
+        // Given
+        when(notificationRepository.save(any(Notification.class)))
+            .thenAnswer(invocation -> {
+                Notification n = invocation.getArgument(0);
+                if (n.getId() == null) {
+                    n.setId(1L);
+                }
+                return n;
+            });
+        when(deviceTokenService.getActiveFcmTokens(1L))
+            .thenReturn(Arrays.asList("token1", "token2"));
+        when(pushNotificationProvider.sendPushNotificationToMultiple(anyList(), anyString(), anyString(), anyMap()))
+            .thenReturn(2);
+        
+        // When
+        Notification result = notificationService.sendNotification(
+            1L, NotificationType.TASK_ASSIGNED, NotificationChannel.PUSH, 
+            "New Task\nYou have been assigned a new task"
+        );
+        
+        // Then
+        assertEquals(NotificationStatus.SENT, result.getStatus());
+        verify(deviceTokenService).getActiveFcmTokens(1L);
+        verify(pushNotificationProvider).sendPushNotificationToMultiple(
+            eq(Arrays.asList("token1", "token2")), eq("New Task"), 
+            eq("You have been assigned a new task"), anyMap()
+        );
+    }
+    
+    @Test
+    void testSendNotification_PushChannel_NoDeviceTokens() {
+        // Given
+        when(notificationRepository.save(any(Notification.class)))
+            .thenAnswer(invocation -> {
+                Notification n = invocation.getArgument(0);
+                if (n.getId() == null) {
+                    n.setId(1L);
+                }
+                return n;
+            });
+        when(deviceTokenService.getActiveFcmTokens(1L))
+            .thenReturn(Collections.emptyList());
+        
+        // When
+        Notification result = notificationService.sendNotification(
+            1L, NotificationType.TASK_ASSIGNED, NotificationChannel.PUSH, 
+            "New Task\nYou have been assigned a new task"
+        );
+        
+        // Then
+        // Should still succeed even with no device tokens
+        assertEquals(NotificationStatus.SENT, result.getStatus());
+        verify(deviceTokenService).getActiveFcmTokens(1L);
+        verify(pushNotificationProvider, never()).sendPushNotificationToMultiple(anyList(), anyString(), anyString(), anyMap());
+    }
+    
+    @Test
+    void testSendNotification_PushChannel_PartialSuccess() {
+        // Given
+        when(notificationRepository.save(any(Notification.class)))
+            .thenAnswer(invocation -> {
+                Notification n = invocation.getArgument(0);
+                if (n.getId() == null) {
+                    n.setId(1L);
+                }
+                return n;
+            });
+        when(deviceTokenService.getActiveFcmTokens(1L))
+            .thenReturn(Arrays.asList("token1", "token2", "token3"));
+        when(pushNotificationProvider.sendPushNotificationToMultiple(anyList(), anyString(), anyString(), anyMap()))
+            .thenReturn(2); // Only 2 out of 3 succeed
+        
+        // When
+        Notification result = notificationService.sendNotification(
+            1L, NotificationType.TASK_ASSIGNED, NotificationChannel.PUSH, 
+            "New Task\nYou have been assigned a new task"
+        );
+        
+        // Then
+        // Should still be marked as SENT if at least one device received it
+        assertEquals(NotificationStatus.SENT, result.getStatus());
+    }
+    
+    @Test
+    void testSendNotification_PushChannel_AllFailed() {
+        // Given
+        when(notificationRepository.save(any(Notification.class)))
+            .thenAnswer(invocation -> {
+                Notification n = invocation.getArgument(0);
+                if (n.getId() == null) {
+                    n.setId(1L);
+                }
+                return n;
+            });
+        when(deviceTokenService.getActiveFcmTokens(1L))
+            .thenReturn(Arrays.asList("token1", "token2"));
+        when(pushNotificationProvider.sendPushNotificationToMultiple(anyList(), anyString(), anyString(), anyMap()))
+            .thenReturn(0); // All failed
+        
+        // When
+        Notification result = notificationService.sendNotification(
+            1L, NotificationType.TASK_ASSIGNED, NotificationChannel.PUSH, 
+            "New Task\nYou have been assigned a new task"
+        );
+        
+        // Then
+        // Should be marked as FAILED if none succeeded
+        assertEquals(NotificationStatus.FAILED, result.getStatus());
     }
 }
