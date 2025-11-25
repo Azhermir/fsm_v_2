@@ -39,8 +39,6 @@ The following workflow **must always be followed** for any modification or creat
 
 ---
 
-# Run Maven Build & Tests
-
 1. **Run Maven build and tests**
 
 mvn -B clean verify
