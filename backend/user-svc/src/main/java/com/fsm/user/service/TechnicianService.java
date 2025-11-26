@@ -3,8 +3,6 @@ package com.fsm.user.service;
 import com.fsm.user.domain.Location;
 import com.fsm.user.domain.Technician;
 import com.fsm.user.domain.TechnicianStatus;
-import com.fsm.user.repository.TechnicianRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,10 +14,7 @@ import java.util.Optional;
  * Returns hardcoded static technician data for now
  */
 @Service
-@RequiredArgsConstructor
 public class TechnicianService {
-    
-    private final TechnicianRepository technicianRepository;
     
     /**
      * Get all active technicians (AVAILABLE or BUSY, not OFFLINE)

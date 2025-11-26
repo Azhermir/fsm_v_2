@@ -116,7 +116,7 @@ public class DashboardController {
             }
             
             // Calculate metrics
-            DashboardMetricsResponse metrics = calculateMetrics(tasks, start, end);
+            DashboardMetricsResponse metrics = calculateMetrics(tasks);
             
             log.info("Dashboard metrics calculated successfully - Total tasks: {}, Completed: {}, Open: {}", 
                     metrics.getTotalTasks(), metrics.getCompletedTasks(), metrics.getOpenTasks());
@@ -136,11 +136,9 @@ public class DashboardController {
      * Calculate dashboard metrics from a list of tasks
      * 
      * @param tasks List of tasks to calculate metrics from
-     * @param startDate Optional start date for completion time calculation
-     * @param endDate Optional end date for completion time calculation
      * @return Dashboard metrics response
      */
-    private DashboardMetricsResponse calculateMetrics(List<ServiceTask> tasks, LocalDateTime startDate, LocalDateTime endDate) {
+    private DashboardMetricsResponse calculateMetrics(List<ServiceTask> tasks) {
         // Total tasks
         long totalTasks = tasks.size();
         
